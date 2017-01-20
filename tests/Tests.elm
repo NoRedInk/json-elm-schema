@@ -35,6 +35,10 @@ all =
 expectAt : List String -> ( Decode.Decoder a, a ) -> String -> Expect.Expectation
 expectAt path ( decoder, expected ) actual =
     let
+        -- TODO REMOVE THIS OUTPUT
+        _ =
+            Debug.log "SCHEMA:" actual
+
         result =
             Decode.decodeString
                 (Pipeline.decode identity
@@ -46,8 +50,8 @@ expectAt path ( decoder, expected ) actual =
             Ok decoded ->
                 Expect.equal expected decoded
 
-            Err _ ->
-                Expect.fail "Couldn't decode schema"
+            Err error ->
+                Expect.fail ("Couldn't decode schema: " ++ error)
 
 
 testDecoder : String -> Result String String

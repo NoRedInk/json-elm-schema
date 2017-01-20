@@ -7,13 +7,23 @@ testSchema : Schema
 testSchema =
     object
         [ title "Example Schema"
+        , description "This is a description"
         , exactProperties
             [ required "firstName" <| string []
-            , required "lastName" <| string []
-            , notRequired "age" <|
-                integer
-                    [ description "Age in years"
-                    , minimum 0
-                    ]
             ]
         ]
+
+
+
+-- object
+--     [ title "Example Schema"
+--     , exactProperties
+--         [ required "firstName" <| string []
+--         , required "lastName" <| string []
+--         , notRequired "age" <|
+--             integer
+--                 [ description "Age in years"
+--                 , minimum 0
+--                 ]
+--         ]
+--     ]
