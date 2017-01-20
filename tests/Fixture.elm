@@ -1,6 +1,6 @@
-module Test exposing (..)
+module Fixture exposing (..)
 
-import Main exposing (..)
+import JsonSchema exposing (..)
 
 
 testSchema : Schema

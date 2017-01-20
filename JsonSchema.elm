@@ -1,4 +1,4 @@
-module Main exposing (..)
+module JsonSchema exposing (..)
 
 import Json.Encode as Encode
 import Maybe.Extra
