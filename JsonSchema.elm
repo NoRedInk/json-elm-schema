@@ -17,11 +17,15 @@ type Schema
     | Null
 
 
-type alias ObjectSchema =
-    { title : Maybe String
-    , description : Maybe String
-    , properties : List Property
+type alias BaseSchema extras =
+    { extras
+        | title : Maybe String
+        , description : Maybe String
     }
+
+
+type alias ObjectSchema =
+    BaseSchema { properties : List Property }
 
 
 defaultObject : ObjectSchema
@@ -38,9 +42,7 @@ type Property
 
 
 type alias StringSchema =
-    { title : Maybe String
-    , description : Maybe String
-    }
+    BaseSchema {}
 
 
 defaultString : StringSchema
