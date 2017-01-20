@@ -5,19 +5,18 @@ import Maybe.Extra
 
 
 type Schema
-    = Object ObjectSchema
-    | Array ArraySchema
-    | String StringSchema
-    | Number NumberSchema
-    | Integer IntegerSchema
+    = Object (List ObjectSchema)
+    | Array (List ArraySchema)
+    | String (List StringSchema)
+    | Number (List NumberSchema)
+    | Integer (List IntegerSchema)
     | Null
 
 
-type alias ObjectSchema =
-    { properties : List Property
-    , title : Maybe String
-    , description : Maybe String
-    }
+type ObjectSchema
+    = ObjectProperties (List Property)
+    | ObjectTitle String
+    | ObjectDescription String
 
 
 type Property
@@ -25,30 +24,26 @@ type Property
     | NotRequired String Schema
 
 
-type alias ArraySchema =
-    { title : Maybe String
-    , description : Maybe String
-    }
+type ArraySchema
+    = ArrayTitle String
+    | ArrayDescription String
 
 
-type alias StringSchema =
-    { title : Maybe String
-    , description : Maybe String
-    }
+type StringSchema
+    = StringTitle String
+    | StringDescription String
 
 
-type alias NumberSchema =
-    { title : Maybe String
-    , description : Maybe String
-    }
+type NumberSchema
+    = NumberTitle String
+    | NumberDescription String
 
 
-type alias IntegerSchema =
-    { title : Maybe String
-    , description : Maybe String
-    , maximum : Maybe Int
-    , minimum : Maybe Int
-    }
+type IntegerSchema
+    = IntegerTitle String
+    | IntegerDescription String
+    | IntegerMaximum Int
+    | IntegerMinimum Int
 
 
 encoder : Schema -> String
@@ -62,51 +57,98 @@ convert : Schema -> Encode.Value
 convert schema =
     case schema of
         Object objectSchema ->
-            [ Just ( "type", Encode.string "object" )
-            , Maybe.map ((,) "title" << Encode.string) objectSchema.title
-            , Maybe.map ((,) "description" << Encode.string) objectSchema.description
-            , Just ( "properties", (convertProperty objectSchema.properties) )
-            , Just ( "required", (findRequiredFields objectSchema.properties) )
-            ]
-                |> Maybe.Extra.values
+            (( "type", Encode.string "object" )
+                :: List.concatMap objectSchemaDecoder objectSchema
+            )
                 |> Encode.object
 
         Array arraySchema ->
-            [ Just ( "type", Encode.string "array" )
-            , Maybe.map ((,) "title" << Encode.string) arraySchema.title
-            , Maybe.map ((,) "description" << Encode.string) arraySchema.description
-            ]
-                |> Maybe.Extra.values
+            (( "type", Encode.string "array" )
+                :: List.concatMap arraySchemaDecoder arraySchema
+            )
                 |> Encode.object
 
         String stringSchema ->
-            [ Just ( "type", Encode.string "string" )
-            , Maybe.map ((,) "title" << Encode.string) stringSchema.title
-            , Maybe.map ((,) "description" << Encode.string) stringSchema.description
-            ]
-                |> Maybe.Extra.values
+            (( "type", Encode.string "string" )
+                :: List.concatMap stringSchemaDecoder stringSchema
+            )
                 |> Encode.object
 
         Number numberSchema ->
-            [ Just ( "type", Encode.string "number" )
-            , Maybe.map ((,) "title" << Encode.string) numberSchema.title
-            , Maybe.map ((,) "description" << Encode.string) numberSchema.description
-            ]
-                |> Maybe.Extra.values
+            (( "type", Encode.string "number" )
+                :: List.concatMap numberSchemaDecoder numberSchema
+            )
                 |> Encode.object
 
         Integer integerSchema ->
-            [ Just ( "type", Encode.string "integer" )
-            , Maybe.map ((,) "title" << Encode.string) integerSchema.title
-            , Maybe.map ((,) "description" << Encode.string) integerSchema.description
-            , Maybe.map ((,) "maximum" << Encode.int) integerSchema.maximum
-            , Maybe.map ((,) "minimum" << Encode.int) integerSchema.minimum
-            ]
-                |> Maybe.Extra.values
+            (( "type", Encode.string "integer" )
+                :: List.concatMap integerSchemaDecoder integerSchema
+            )
                 |> Encode.object
 
         Null ->
             Encode.null
+
+
+objectSchemaDecoder : ObjectSchema -> List ( String, Encode.Value )
+objectSchemaDecoder value =
+    case value of
+        ObjectTitle title ->
+            [ ( "title", Encode.string title ) ]
+
+        ObjectDescription description ->
+            [ ( "description", Encode.string description ) ]
+
+        ObjectProperties properties ->
+            [ ( "properties", convertProperty properties )
+            , ( "required", findRequiredFields properties )
+            ]
+
+
+arraySchemaDecoder : ArraySchema -> List ( String, Encode.Value )
+arraySchemaDecoder value =
+    case value of
+        ArrayTitle title ->
+            [ ( "title", Encode.string title ) ]
+
+        ArrayDescription description ->
+            [ ( "description", Encode.string description ) ]
+
+
+stringSchemaDecoder : StringSchema -> List ( String, Encode.Value )
+stringSchemaDecoder value =
+    case value of
+        StringTitle title ->
+            [ ( "title", Encode.string title ) ]
+
+        StringDescription description ->
+            [ ( "description", Encode.string description ) ]
+
+
+numberSchemaDecoder : NumberSchema -> List ( String, Encode.Value )
+numberSchemaDecoder value =
+    case value of
+        NumberTitle title ->
+            [ ( "title", Encode.string title ) ]
+
+        NumberDescription description ->
+            [ ( "description", Encode.string description ) ]
+
+
+integerSchemaDecoder : IntegerSchema -> List ( String, Encode.Value )
+integerSchemaDecoder value =
+    case value of
+        IntegerTitle title ->
+            [ ( "title", Encode.string title ) ]
+
+        IntegerDescription description ->
+            [ ( "description", Encode.string description ) ]
+
+        IntegerMaximum value ->
+            [ ( "maximum", Encode.int value ) ]
+
+        IntegerMinimum value ->
+            [ ( "minimum", Encode.int value ) ]
 
 
 convertProperty : List Property -> Encode.Value
