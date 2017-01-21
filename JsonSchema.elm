@@ -27,8 +27,17 @@ defaultInteger =
     }
 
 
-type alias BaseSchemaProperty a =
-    BaseSchema a -> BaseSchema a
+defaultNumber : NumberSchema
+defaultNumber =
+    { title = Nothing
+    , description = Nothing
+    , minimum = Nothing
+    , maximum = Nothing
+    }
+
+
+type alias BaseSchemaProperty extras =
+    BaseSchema extras -> BaseSchema extras
 
 
 type alias ObjectSchemaProperty =
@@ -39,8 +48,16 @@ type alias StringSchemaProperty =
     StringSchema -> StringSchema
 
 
+type alias BaseNumberSchemaProperty num =
+    BaseNumberSchema num -> BaseNumberSchema num
+
+
 type alias IntegerSchemaProperty =
     IntegerSchema -> IntegerSchema
+
+
+type alias NumberSchemaProperty =
+    NumberSchema -> NumberSchema
 
 
 required : String -> Schema -> ObjectProperty
@@ -53,24 +70,24 @@ optional =
     Optional
 
 
-title : String -> BaseSchemaProperty a
+title : String -> BaseSchemaProperty extras
 title text schema =
     { schema | title = Just text }
 
 
-description : String -> BaseSchemaProperty a
+description : String -> BaseSchemaProperty extras
 description text schema =
     { schema | description = Just text }
 
 
-minimum : Int -> IntegerSchemaProperty
-minimum int schema =
-    { schema | minimum = Just int }
+minimum : num -> BaseNumberSchemaProperty num
+minimum number schema =
+    { schema | minimum = Just number }
 
 
-maximum : Int -> IntegerSchemaProperty
-maximum int schema =
-    { schema | maximum = Just int }
+maximum : num -> BaseNumberSchemaProperty num
+maximum number schema =
+    { schema | maximum = Just number }
 
 
 properties : List ObjectProperty -> ObjectSchemaProperty
@@ -94,3 +111,9 @@ integer : List IntegerSchemaProperty -> Schema
 integer props =
     List.foldl (<|) defaultInteger props
         |> Integer
+
+
+number : List NumberSchemaProperty -> Schema
+number props =
+    List.foldl (<|) defaultNumber props
+        |> Number

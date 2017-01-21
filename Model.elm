@@ -5,6 +5,7 @@ type Schema
     = Object ObjectSchema
     | String StringSchema
     | Integer IntegerSchema
+    | Number NumberSchema
     | Null
 
 
@@ -21,11 +22,19 @@ type alias ObjectSchema =
         }
 
 
-type alias IntegerSchema =
+type alias BaseNumberSchema num =
     BaseSchema
-        { minimum : Maybe Int
-        , maximum : Maybe Int
+        { minimum : Maybe num
+        , maximum : Maybe num
         }
+
+
+type alias IntegerSchema =
+    BaseNumberSchema Int
+
+
+type alias NumberSchema =
+    BaseNumberSchema Float
 
 
 type ObjectProperty

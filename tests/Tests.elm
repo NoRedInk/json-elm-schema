@@ -23,6 +23,12 @@ all =
                     |> expectAt
                         [ "properties", "age", "minimum" ]
                         ( Decode.int, 0 )
+        , test "basics" <|
+            \() ->
+                encoder Fixture.testSchema
+                    |> expectAt
+                        [ "properties", "height", "type" ]
+                        ( Decode.string, "number" )
         ]
 
 

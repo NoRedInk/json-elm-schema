@@ -17,5 +17,10 @@ testSchema =
                     [ description "Age in years"
                     , minimum 0
                     ]
+            , optional "height" <|
+                number
+                    [ description "Height in meters"
+                    , minimum 0
+                    ]
             ]
         ]

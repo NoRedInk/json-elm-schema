@@ -43,6 +43,16 @@ convert schema =
                 |> Maybe.Extra.values
                 |> Encode.object
 
+        Number numberSchema ->
+            [ Just ( "type", Encode.string "integer" )
+            , Maybe.map ((,) "title" << Encode.string) numberSchema.title
+            , Maybe.map ((,) "description" << Encode.string) numberSchema.description
+            , Maybe.map ((,) "minimum" << Encode.float) numberSchema.minimum
+            , Maybe.map ((,) "maximum" << Encode.float) numberSchema.maximum
+            ]
+                |> Maybe.Extra.values
+                |> Encode.object
+
         Null ->
             Encode.null
 
