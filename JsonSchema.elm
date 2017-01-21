@@ -1,31 +1,6 @@
 module JsonSchema exposing (..)
 
-import Json.Encode as Encode
-import Maybe.Extra
-
-
--- TODO
--- FIGURE OUT DRY TECHNIQUE, then implement
--- | Array ArraySchema
--- | Number NumberSchema
--- | Integer IntegerSchema
-
-
-type Schema
-    = Object ObjectSchema
-    | String StringSchema
-    | Null
-
-
-type alias BaseSchema extras =
-    { extras
-        | title : Maybe String
-        , description : Maybe String
-    }
-
-
-type alias ObjectSchema =
-    BaseSchema { properties : List Property }
+import Model exposing (..)
 
 
 defaultObject : ObjectSchema
@@ -36,15 +11,6 @@ defaultObject =
     }
 
 
-type Property
-    = Required String Schema
-    | NotRequired String Schema
-
-
-type alias StringSchema =
-    BaseSchema {}
-
-
 defaultString : StringSchema
 defaultString =
     { title = Nothing
@@ -52,131 +18,79 @@ defaultString =
     }
 
 
-type Prop
-    = Title String
-    | Description String
-    | Properties (List Property)
+defaultInteger : IntegerSchema
+defaultInteger =
+    { title = Nothing
+    , description = Nothing
+    , minimum = Nothing
+    , maximum = Nothing
+    }
 
 
-title : String -> Prop
-title =
-    Title
+type alias BaseSchemaProperty a =
+    BaseSchema a -> BaseSchema a
 
 
-required : String -> Schema -> Property
+type alias ObjectSchemaProperty =
+    ObjectSchema -> ObjectSchema
+
+
+type alias StringSchemaProperty =
+    StringSchema -> StringSchema
+
+
+type alias IntegerSchemaProperty =
+    IntegerSchema -> IntegerSchema
+
+
+required : String -> Schema -> ObjectProperty
 required =
     Required
 
 
-description : String -> Prop
-description =
-    Description
+optional : String -> Schema -> ObjectProperty
+optional =
+    Optional
 
 
-exactProperties : List Property -> Prop
-exactProperties =
-    -- TODO implement this to be different from
-    -- additionalProperties
-    Properties
+title : String -> BaseSchemaProperty a
+title text schema =
+    { schema | title = Just text }
 
 
-encoder : Schema -> String
-encoder schema =
-    schema
-        |> convert
-        |> Encode.encode 4
+description : String -> BaseSchemaProperty a
+description text schema =
+    { schema | description = Just text }
 
 
-object : List Prop -> Schema
+minimum : Int -> IntegerSchemaProperty
+minimum int schema =
+    { schema | minimum = Just int }
+
+
+maximum : Int -> IntegerSchemaProperty
+maximum int schema =
+    { schema | maximum = Just int }
+
+
+properties : List ObjectProperty -> ObjectSchemaProperty
+properties properties schema =
+    { schema | properties = schema.properties ++ properties }
+
+
+object : List ObjectSchemaProperty -> Schema
 object props =
-    List.foldl objectFolder defaultObject props
+    List.foldl (<|) defaultObject props
         |> Object
 
 
-string : List Prop -> Schema
+string : List StringSchemaProperty -> Schema
 string props =
-    List.foldl stringFolder defaultString props
+    List.foldl (<|) defaultString props
         |> String
 
 
-objectFolder : Prop -> ObjectSchema -> ObjectSchema
-objectFolder prop schema =
-    case prop of
-        Title title ->
-            { schema | title = Just title }
-
-        Description description ->
-            { schema | description = Just description }
-
-        Properties properties ->
-            { schema | properties = properties }
-
-
-stringFolder : Prop -> StringSchema -> StringSchema
-stringFolder prop schema =
-    case prop of
-        Title title ->
-            { schema | title = Just title }
-
-        Description description ->
-            { schema | description = Just description }
-
-        Properties properties ->
-            schema
-
-
-convert : Schema -> Encode.Value
-convert schema =
-    case schema of
-        Object objectSchema ->
-            [ Just ( "type", Encode.string "object" )
-            , Maybe.map ((,) "title" << Encode.string) objectSchema.title
-            , Maybe.map ((,) "description" << Encode.string) objectSchema.description
-            , Just ( "properties", (convertProperty objectSchema.properties) )
-            , Just ( "required", (findRequiredFields objectSchema.properties) )
-            ]
-                |> Maybe.Extra.values
-                |> Encode.object
-
-        String stringSchema ->
-            [ Just ( "type", Encode.string "string" )
-            , Maybe.map ((,) "title" << Encode.string) stringSchema.title
-            , Maybe.map ((,) "description" << Encode.string) stringSchema.description
-            ]
-                |> Maybe.Extra.values
-                |> Encode.object
-
-        Null ->
-            Encode.null
-
-
-convertProperty : List Property -> Encode.Value
-convertProperty properties =
-    properties
-        |> List.map
-            (\property ->
-                case property of
-                    Required name schema ->
-                        ( name, convert schema )
-
-                    NotRequired name schema ->
-                        ( name, convert schema )
-            )
-        |> Encode.object
-
-
-findRequiredFields : List Property -> Encode.Value
-findRequiredFields properties =
-    properties
-        |> List.map
-            (\property ->
-                case property of
-                    Required name _ ->
-                        Just name
-
-                    NotRequired _ _ ->
-                        Nothing
-            )
-        |> Maybe.Extra.values
-        |> List.map Encode.string
-        |> Encode.list
+integer : List IntegerSchemaProperty -> Schema
+integer props =
+    List.foldl (<|) defaultInteger props
+        |> Integer

@@ -2,7 +2,7 @@ module Tests exposing (..)
 
 import Test exposing (..)
 import Expect
-import JsonSchema
+import Encoder exposing (encoder)
 import Json.Decode as Decode
 import Fixture
 import Json.Decode.Pipeline as Pipeline
@@ -13,21 +13,15 @@ all =
     describe "JsonSchema"
         [ test "basics" <|
             \() ->
-                JsonSchema.encoder Fixture.testSchema
+                encoder Fixture.testSchema
                     |> expectAt
-                        [ "properties"
-                        , "firstName"
-                        , "type"
-                        ]
+                        [ "properties", "firstName", "type" ]
                         ( Decode.string, "string" )
         , test "basics" <|
             \() ->
-                JsonSchema.encoder Fixture.testSchema
+                encoder Fixture.testSchema
                     |> expectAt
-                        [ "properties"
-                        , "age"
-                        , "minimum"
-                        ]
+                        [ "properties", "age", "minimum" ]
                         ( Decode.int, 0 )
         ]
 
@@ -35,10 +29,6 @@ all =
 expectAt : List String -> ( Decode.Decoder a, a ) -> String -> Expect.Expectation
 expectAt path ( decoder, expected ) actual =
     let
-        -- TODO REMOVE THIS OUTPUT
-        _ =
-            Debug.log "SCHEMA:" actual
-
         result =
             Decode.decodeString
                 (Pipeline.decode identity
