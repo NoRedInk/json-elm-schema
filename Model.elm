@@ -3,10 +3,12 @@ module Model exposing (..)
 
 type Schema
     = Object ObjectSchema
+    | Array ArraySchema
     | String StringSchema
     | Integer IntegerSchema
     | Number NumberSchema
-    | Null
+    | Boolean (BaseSchema {})
+    | Null (BaseSchema {})
 
 
 type alias BaseSchema extras =
@@ -19,6 +21,12 @@ type alias BaseSchema extras =
 type alias ObjectSchema =
     BaseSchema
         { properties : List ObjectProperty
+        }
+
+
+type alias ArraySchema =
+    BaseSchema
+        { items : Maybe Schema
         }
 
 

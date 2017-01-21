@@ -3,11 +3,26 @@ module JsonSchema exposing (..)
 import Model exposing (..)
 
 
+defaultBaseSchema : BaseSchema {}
+defaultBaseSchema =
+    { title = Nothing
+    , description = Nothing
+    }
+
+
 defaultObject : ObjectSchema
 defaultObject =
     { title = Nothing
     , description = Nothing
     , properties = []
+    }
+
+
+defaultArray : ArraySchema
+defaultArray =
+    { title = Nothing
+    , description = Nothing
+    , items = Nothing
     }
 
 
@@ -42,6 +57,10 @@ type alias BaseSchemaProperty extras =
 
 type alias ObjectSchemaProperty =
     ObjectSchema -> ObjectSchema
+
+
+type alias ArraySchemaProperty =
+    ArraySchema -> ArraySchema
 
 
 type alias StringSchemaProperty =
@@ -101,6 +120,12 @@ object props =
         |> Object
 
 
+array : List ArraySchemaProperty -> Schema
+array props =
+    List.foldl (<|) defaultArray props
+        |> Array
+
+
 string : List StringSchemaProperty -> Schema
 string props =
     List.foldl (<|) defaultString props
@@ -117,3 +142,15 @@ number : List NumberSchemaProperty -> Schema
 number props =
     List.foldl (<|) defaultNumber props
         |> Number
+
+
+boolean : List (BaseSchemaProperty {}) -> Schema
+boolean props =
+    List.foldl (<|) defaultBaseSchema props
+        |> Boolean
+
+
+null : List (BaseSchemaProperty {}) -> Schema
+null props =
+    List.foldl (<|) defaultBaseSchema props
+        |> Null

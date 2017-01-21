@@ -25,6 +25,15 @@ convert schema =
                 |> Maybe.Extra.values
                 |> Encode.object
 
+        Array arraySchema ->
+            [ Just ( "type", Encode.string "object" )
+            , Maybe.map ((,) "title" << Encode.string) arraySchema.title
+            , Maybe.map ((,) "description" << Encode.string) arraySchema.description
+            , Maybe.map ((,) "items" << convert) arraySchema.items
+            ]
+                |> Maybe.Extra.values
+                |> Encode.object
+
         String stringSchema ->
             [ Just ( "type", Encode.string "string" )
             , Maybe.map ((,) "title" << Encode.string) stringSchema.title
@@ -44,7 +53,7 @@ convert schema =
                 |> Encode.object
 
         Number numberSchema ->
-            [ Just ( "type", Encode.string "integer" )
+            [ Just ( "type", Encode.string "number" )
             , Maybe.map ((,) "title" << Encode.string) numberSchema.title
             , Maybe.map ((,) "description" << Encode.string) numberSchema.description
             , Maybe.map ((,) "minimum" << Encode.float) numberSchema.minimum
@@ -53,8 +62,21 @@ convert schema =
                 |> Maybe.Extra.values
                 |> Encode.object
 
-        Null ->
-            Encode.null
+        Boolean booleanSchema ->
+            [ Just ( "type", Encode.string "boolean" )
+            , Maybe.map ((,) "title" << Encode.string) booleanSchema.title
+            , Maybe.map ((,) "description" << Encode.string) booleanSchema.description
+            ]
+                |> Maybe.Extra.values
+                |> Encode.object
+
+        Null nullSchema ->
+            [ Just ( "type", Encode.string "null" )
+            , Maybe.map ((,) "title" << Encode.string) nullSchema.title
+            , Maybe.map ((,) "description" << Encode.string) nullSchema.description
+            ]
+                |> Maybe.Extra.values
+                |> Encode.object
 
 
 convertProperty : List ObjectProperty -> Encode.Value
