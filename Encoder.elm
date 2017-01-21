@@ -55,9 +55,6 @@ convert schema =
         Number numberSchema ->
             [ Just ( "type", Encode.string "number" )
             , Maybe.map ((,) "title" << Encode.string) numberSchema.title
-            , Maybe.map ((,) "description" << Encode.string) numberSchema.description
-            , Maybe.map ((,) "minimum" << Encode.float) numberSchema.minimum
-            , Maybe.map ((,) "maximum" << Encode.float) numberSchema.maximum
             ]
                 |> Maybe.Extra.values
                 |> Encode.object

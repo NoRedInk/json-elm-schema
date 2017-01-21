@@ -4,6 +4,18 @@ import JsonSchema exposing (..)
 import Model exposing (Schema)
 
 
+objectSchema : Schema
+objectSchema =
+    object
+        [ title "Example Schema"
+        , description "This is a description"
+        , properties
+            [ optional "firstName" <| string []
+            , required "lastName" <| string []
+            ]
+        ]
+
+
 testSchema : Schema
 testSchema =
     object
