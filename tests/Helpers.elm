@@ -4,12 +4,12 @@ import Json.Decode as Decode exposing (..)
 import Expect
 
 
-expectAt : List String -> String -> String -> Expect.Expectation
-expectAt path expected actual =
+expectAt : List String -> ( Decoder a, a ) -> String -> Expect.Expectation
+expectAt path ( decoder, expected ) actual =
     let
-        result : Result String String
+        result : Result String a
         result =
-            decodeString (at path string) actual
+            decodeString (at path decoder) actual
     in
         case result of
             Ok decoded ->

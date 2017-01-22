@@ -114,6 +114,11 @@ properties properties schema =
     { schema | properties = schema.properties ++ properties }
 
 
+items : Schema -> ArraySchemaProperty
+items items schema =
+    { schema | items = Just items }
+
+
 object : List ObjectSchemaProperty -> Schema
 object props =
     List.foldl (<|) defaultObject props

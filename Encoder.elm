@@ -26,7 +26,7 @@ convert schema =
                 |> Encode.object
 
         Array arraySchema ->
-            [ Just ( "type", Encode.string "object" )
+            [ Just ( "type", Encode.string "array" )
             , Maybe.map ((,) "title" << Encode.string) arraySchema.title
             , Maybe.map ((,) "description" << Encode.string) arraySchema.description
             , Maybe.map ((,) "items" << convert) arraySchema.items
@@ -55,6 +55,9 @@ convert schema =
         Number numberSchema ->
             [ Just ( "type", Encode.string "number" )
             , Maybe.map ((,) "title" << Encode.string) numberSchema.title
+            , Maybe.map ((,) "description" << Encode.string) numberSchema.description
+            , Maybe.map ((,) "minimum" << Encode.float) numberSchema.minimum
+            , Maybe.map ((,) "maximum" << Encode.float) numberSchema.maximum
             ]
                 |> Maybe.Extra.values
                 |> Encode.object
