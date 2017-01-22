@@ -38,6 +38,10 @@ convert schema =
             [ Just ( "type", Encode.string "string" )
             , Maybe.map ((,) "title" << Encode.string) stringSchema.title
             , Maybe.map ((,) "description" << Encode.string) stringSchema.description
+            , Maybe.map ((,) "minLength" << Encode.int) stringSchema.minLength
+            , Maybe.map ((,) "maxLength" << Encode.int) stringSchema.maxLength
+            , Maybe.map ((,) "pattern" << Encode.string) stringSchema.pattern
+            , Maybe.map ((,) "format" << Encode.string << printFormat) stringSchema.format
             ]
                 |> Maybe.Extra.values
                 |> Encode.object
@@ -109,3 +113,28 @@ findRequiredFields properties =
         |> Maybe.Extra.values
         |> List.map Encode.string
         |> Encode.list
+
+
+printFormat : StringFormat -> String
+printFormat format =
+    case format of
+        DateTime ->
+            "date-time"
+
+        Email ->
+            "email"
+
+        Hostname ->
+            "hostname"
+
+        Ipv4 ->
+            "ipv4"
+
+        Ipv6 ->
+            "ipv6"
+
+        Uri ->
+            "uri"
+
+        Custom customFormat ->
+            customFormat

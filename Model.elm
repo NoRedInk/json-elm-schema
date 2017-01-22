@@ -51,4 +51,22 @@ type ObjectProperty
 
 
 type alias StringSchema =
-    BaseSchema {}
+    BaseSchema
+        { minLength : Maybe Int
+        , maxLength : Maybe Int
+        , pattern : Maybe String
+        , format : Maybe StringFormat
+        }
+
+
+{-| One of the built-in string formats defined by the json schema specification,
+    or a custom format your schema validator understands.
+-}
+type StringFormat
+    = DateTime
+    | Email
+    | Hostname
+    | Ipv4
+    | Ipv6
+    | Uri
+    | Custom String

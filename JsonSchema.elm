@@ -30,6 +30,10 @@ defaultString : StringSchema
 defaultString =
     { title = Nothing
     , description = Nothing
+    , minLength = Nothing
+    , maxLength = Nothing
+    , pattern = Nothing
+    , format = Nothing
     }
 
 
@@ -117,6 +121,61 @@ properties properties schema =
 items : Schema -> ArraySchemaProperty
 items items schema =
     { schema | items = Just items }
+
+
+minLength : Int -> StringSchemaProperty
+minLength length schema =
+    { schema | minLength = Just length }
+
+
+maxLength : Int -> StringSchemaProperty
+maxLength length schema =
+    { schema | maxLength = Just length }
+
+
+pattern : String -> StringSchemaProperty
+pattern regex schema =
+    { schema | pattern = Just regex }
+
+
+format : StringFormat -> StringSchemaProperty
+format formatOption schema =
+    { schema | format = Just formatOption }
+
+
+dateTime : StringFormat
+dateTime =
+    DateTime
+
+
+email : StringFormat
+email =
+    Email
+
+
+hostname : StringFormat
+hostname =
+    Hostname
+
+
+ipv4 : StringFormat
+ipv4 =
+    Ipv4
+
+
+ipv6 : StringFormat
+ipv6 =
+    Ipv6
+
+
+uri : StringFormat
+uri =
+    Uri
+
+
+customFormat : String -> StringFormat
+customFormat =
+    Custom
 
 
 object : List ObjectSchemaProperty -> Schema

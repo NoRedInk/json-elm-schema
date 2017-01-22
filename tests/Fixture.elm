@@ -30,6 +30,10 @@ stringSchema =
     string
         [ title "string schema title"
         , description "string schema description"
+        , minLength 2
+        , maxLength 8
+        , pattern "^foo$"
+        , format dateTime
         ]
 
 

@@ -117,6 +117,30 @@ stringSchema =
                     |> expectAt
                         [ "type" ]
                         ( Decode.string, "string" )
+        , test "minLength property is set" <|
+            \() ->
+                encoder Fixture.stringSchema
+                    |> expectAt
+                        [ "minLength" ]
+                        ( Decode.int, 2 )
+        , test "maxLength property is set" <|
+            \() ->
+                encoder Fixture.stringSchema
+                    |> expectAt
+                        [ "maxLength" ]
+                        ( Decode.int, 8 )
+        , test "pattern property is set" <|
+            \() ->
+                encoder Fixture.stringSchema
+                    |> expectAt
+                        [ "pattern" ]
+                        ( Decode.string, "^foo$" )
+        , test "format property is set" <|
+            \() ->
+                encoder Fixture.stringSchema
+                    |> expectAt
+                        [ "format" ]
+                        ( Decode.string, "date-time" )
         ]
 
 
