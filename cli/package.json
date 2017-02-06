@@ -21,6 +21,7 @@
   "homepage": "https://github.com/NoRedInk/json-elm-schema#readme",
   "dependencies": {
     "n-readlines": "^0.2.7",
-    "node-elm-compiler": "^4.3.0"
+    "node-elm-compiler": "^4.3.0",
+    "tmp": "0.0.31"
   }
 }
