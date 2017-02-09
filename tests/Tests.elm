@@ -1,7 +1,9 @@
 module Tests exposing (..)
 
 import Test exposing (..)
+import Expect exposing (pass)
 import Encoder exposing (encoder)
+import SchemaFuzz exposing (schemaString)
 import Json.Decode as Decode
 import Fixture
 import Helpers exposing (expectAt, lengthAt)
@@ -17,6 +19,7 @@ all =
         , numberSchema
         , booleanSchema
         , nullSchema
+          -- , fuzzerTest
         ]
 
 
@@ -262,3 +265,15 @@ nullSchema =
                         [ "type" ]
                         ( Decode.string, "null" )
         ]
+
+
+
+-- fuzzerTest : Test
+-- fuzzerTest =
+--     fuzz (schemaString Fixture.objectSchema) "WIP schema fuzzer test" <|
+--         \schema ->
+--             let
+--                 _ =
+--                     Debug.log "schema" schema
+--             in
+--                 Expect.pass
