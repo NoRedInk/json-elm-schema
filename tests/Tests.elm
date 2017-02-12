@@ -1,12 +1,14 @@
 module Tests exposing (..)
 
-import Test exposing (..)
-import Expect exposing (pass)
 import Encoder exposing (encoder)
-import SchemaFuzz exposing (schemaString)
-import Json.Decode as Decode
+import Expect exposing (pass)
 import Fixture
 import Helpers exposing (expectAt, lengthAt)
+import Json.Decode as Decode
+import JsonSchema
+import Model exposing (Schema)
+import SchemaFuzz exposing (schemaString, schemaValue)
+import Test exposing (..)
 
 
 all : Test
@@ -19,7 +21,7 @@ all =
         , numberSchema
         , booleanSchema
         , nullSchema
-          -- , fuzzerTest
+        , numberFuzz
         ]
 
 
@@ -267,13 +269,20 @@ nullSchema =
         ]
 
 
+simpleNumberSchema : Schema
+simpleNumberSchema =
+    JsonSchema.number []
 
--- fuzzerTest : Test
--- fuzzerTest =
---     fuzz (schemaString Fixture.objectSchema) "WIP schema fuzzer test" <|
---         \schema ->
---             let
---                 _ =
---                     Debug.log "schema" schema
---             in
---                 Expect.pass
+
+numberFuzz : Test
+numberFuzz =
+    describe "Fuzzing a number"
+        [ fuzz (schemaValue simpleNumberSchema) "it generates numbers" <|
+            \value ->
+                case Decode.decodeValue Decode.float value of
+                    Ok _ ->
+                        Expect.pass
+
+                    Err _ ->
+                        Expect.fail <| "Expected a number but got: " ++ (toString value)
+        ]
