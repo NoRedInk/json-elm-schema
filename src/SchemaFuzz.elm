@@ -1,10 +1,11 @@
 module SchemaFuzz exposing (schemaValue, schemaString)
 
 import Fuzz exposing (Fuzzer)
-import Json.Encode as Encode exposing (Value)
-import Model exposing (..)
-import Maybe.Extra
 import Fuzz.Extra
+import Json.Encode as Encode exposing (Value)
+import Maybe.Extra
+import Model exposing (..)
+import Random
 
 
 schemaString : Schema -> Fuzzer String
@@ -112,10 +113,23 @@ numberFuzzer schema =
 
 
 integerFuzzer : IntegerSchema -> Fuzzer Value
-integerFuzzer integerSchema =
-    -- TODO: handle integer constraints
-    Fuzz.int
-        |> Fuzz.map Encode.int
+integerFuzzer schema =
+    case ( schema.minimum, schema.maximum ) of
+        ( Nothing, Nothing ) ->
+            Fuzz.int
+                |> Fuzz.map Encode.int
+
+        ( Just minimum, Just maximum ) ->
+            Fuzz.intRange minimum maximum
+                |> Fuzz.map Encode.int
+
+        ( Just minimum, Nothing ) ->
+            Fuzz.intRange minimum Random.maxInt
+                |> Fuzz.map Encode.int
+
+        ( Nothing, Just maximum ) ->
+            Fuzz.intRange Random.minInt maximum
+                |> Fuzz.map Encode.int
 
 
 booleanFuzzer : Fuzzer Value

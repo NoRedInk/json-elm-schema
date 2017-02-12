@@ -15,6 +15,10 @@ spec =
         , minimumNumberFuzzSpec
         , maximumNumberFuzzSpec
         , minimumAndMaximumNumberFuzzSpec
+        , simpleIntegerFuzzSpec
+        , minimumIntegerFuzzSpec
+        , maximumIntegerFuzzSpec
+        , minimumAndMaximumIntegerFuzzSpec
         ]
 
 
@@ -111,3 +115,98 @@ minimumAndMaximumNumberFuzzSpec =
 
                     Err _ ->
                         Expect.fail <| "Expected a number but got: " ++ (toString value)
+
+
+simpleIntegerFuzzSpec : Test
+simpleIntegerFuzzSpec =
+    let
+        simpleIntegerSchema : Schema
+        simpleIntegerSchema =
+            integer []
+    in
+        fuzz (schemaValue simpleIntegerSchema) "it generates integers" <|
+            \value ->
+                case Decode.decodeValue Decode.int value of
+                    Ok _ ->
+                        Expect.pass
+
+                    Err _ ->
+                        Expect.fail <| "Expected a integer but got: " ++ (toString value)
+
+
+minimumIntegerFuzzSpec : Test
+minimumIntegerFuzzSpec =
+    let
+        minimumInteger : Int
+        minimumInteger =
+            3
+
+        minimumIntegerSchema : Schema
+        minimumIntegerSchema =
+            integer
+                [ minimum minimumInteger ]
+    in
+        fuzz (schemaValue minimumIntegerSchema) "it generates integers larger or equal than a certain minimum" <|
+            \value ->
+                case Decode.decodeValue Decode.int value of
+                    Ok result ->
+                        result
+                            |> Expect.atLeast minimumInteger
+
+                    Err _ ->
+                        Expect.fail <| "Expected a integer but got: " ++ (toString value)
+
+
+maximumIntegerFuzzSpec : Test
+maximumIntegerFuzzSpec =
+    let
+        maximumInteger : Int
+        maximumInteger =
+            3
+
+        maximumIntegerSchema : Schema
+        maximumIntegerSchema =
+            integer
+                [ maximum maximumInteger ]
+    in
+        fuzz (schemaValue maximumIntegerSchema) "it generates integers larger or equal than a certain maximum" <|
+            \value ->
+                case Decode.decodeValue Decode.int value of
+                    Ok result ->
+                        result
+                            |> Expect.atMost maximumInteger
+
+                    Err _ ->
+                        Expect.fail <| "Expected a integer but got: " ++ (toString value)
+
+
+minimumAndMaximumIntegerFuzzSpec : Test
+minimumAndMaximumIntegerFuzzSpec =
+    let
+        minimumInteger : Int
+        minimumInteger =
+            -3
+
+        maximumInteger : Int
+        maximumInteger =
+            3
+
+        minimumAndMaximumIntegerSchema : Schema
+        minimumAndMaximumIntegerSchema =
+            integer
+                [ minimum minimumInteger
+                , maximum maximumInteger
+                ]
+    in
+        fuzz (schemaValue minimumAndMaximumIntegerSchema) "it generates integers between a minimum and a maximum" <|
+            \value ->
+                case Decode.decodeValue Decode.int value of
+                    Ok result ->
+                        Expect.all
+                            [ Expect.atMost maximumInteger
+                            , Expect.atLeast minimumInteger
+                            ]
+                            result
+
+                    Err _ ->
+                        Expect.fail <| "Expected a integer but got: " ++ (toString value)
