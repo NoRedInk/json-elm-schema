@@ -4,6 +4,7 @@ import Fuzz exposing (Fuzzer)
 import Json.Encode as Encode exposing (Value)
 import Model exposing (..)
 import Maybe.Extra
+import Fuzz.Extra
 
 
 schemaString : Schema -> Fuzzer String
@@ -91,10 +92,23 @@ stringFuzzer stringSchema =
 
 
 numberFuzzer : NumberSchema -> Fuzzer Value
-numberFuzzer numberSchema =
-    -- TODO: handle number constraints.
-    Fuzz.float
-        |> Fuzz.map Encode.float
+numberFuzzer schema =
+    case ( schema.minimum, schema.maximum ) of
+        ( Nothing, Nothing ) ->
+            Fuzz.float
+                |> Fuzz.map Encode.float
+
+        ( Just minimum, Just maximum ) ->
+            Fuzz.floatRange minimum maximum
+                |> Fuzz.map Encode.float
+
+        ( Just minimum, Nothing ) ->
+            Fuzz.Extra.floatMinimum minimum
+                |> Fuzz.map Encode.float
+
+        ( Nothing, Just maximum ) ->
+            Fuzz.Extra.floatMaximum maximum
+                |> Fuzz.map Encode.float
 
 
 integerFuzzer : IntegerSchema -> Fuzzer Value
