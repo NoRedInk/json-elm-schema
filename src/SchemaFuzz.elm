@@ -86,10 +86,37 @@ arrayFuzzer arraySchema =
 
 
 stringFuzzer : StringSchema -> Fuzzer Value
-stringFuzzer stringSchema =
-    -- TODO: handle string constraints.
-    Fuzz.string
-        |> Fuzz.map Encode.string
+stringFuzzer schema =
+    -- TODO: Handle `format` and `pattern` properties in some way.
+    let
+        tooShort : String -> Bool
+        tooShort str =
+            schema.minLength
+                |> Maybe.map ((<=) (String.length str))
+                |> Maybe.withDefault False
+
+        expandIfTooShort : String -> Fuzzer String
+        expandIfTooShort str =
+            if tooShort str then
+                Fuzz.string
+                    |> Fuzz.map ((++) str)
+                    |> Fuzz.andThen expandIfTooShort
+            else
+                Fuzz.constant str
+
+        cropIfTooLong : String -> String
+        cropIfTooLong str =
+            case schema.maxLength of
+                Nothing ->
+                    str
+
+                Just maxLength ->
+                    String.slice 0 maxLength str
+    in
+        Fuzz.string
+            |> Fuzz.andThen expandIfTooShort
+            |> Fuzz.map cropIfTooLong
+            |> Fuzz.map Encode.string
 
 
 numberFuzzer : NumberSchema -> Fuzzer Value
