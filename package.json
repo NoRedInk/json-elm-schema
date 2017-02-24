@@ -1,0 +1,23 @@
+{
+  "name": "elm-json-schema",
+  "version": "0.1.0",
+  "description": "Json Schema DSL in Elm",
+  "main": "elm.js",
+  "scripts": {
+    "test": "tests/run-tests.sh"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jwoudenberg/json-elm-schema.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/jwoudenberg/json-elm-schema/issues"
+  },
+  "homepage": "https://github.com/jwoudenberg/json-elm-schema#readme",
+  "devDependencies": {
+    "ajv": "^4.11.3",
+    "elm-test": "^0.18.2"
+  }
+}

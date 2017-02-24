@@ -95,14 +95,13 @@ stringFuzzer schema =
                 |> Maybe.map ((<=) (String.length str))
                 |> Maybe.withDefault False
 
-        expandIfTooShort : String -> Fuzzer String
+        expandIfTooShort : String -> String
         expandIfTooShort str =
             if tooShort str then
-                Fuzz.string
-                    |> Fuzz.map ((++) str)
-                    |> Fuzz.andThen expandIfTooShort
+                (str ++ str ++ "abc")
+                    |> expandIfTooShort
             else
-                Fuzz.constant str
+                str
 
         cropIfTooLong : String -> String
         cropIfTooLong str =
@@ -114,7 +113,7 @@ stringFuzzer schema =
                     String.slice 0 maxLength str
     in
         Fuzz.string
-            |> Fuzz.andThen expandIfTooShort
+            |> Fuzz.map expandIfTooShort
             |> Fuzz.map cropIfTooLong
             |> Fuzz.map Encode.string
 

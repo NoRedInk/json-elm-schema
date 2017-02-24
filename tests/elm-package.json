@@ -9,6 +9,7 @@
         "../src"
     ],
     "exposed-modules": [],
+    "native-modules": true,
     "dependencies": {
         "elm-community/elm-test": "3.1.0 <= v < 4.0.0",
         "elm-community/json-extra": "2.0.0 <= v < 3.0.0",
