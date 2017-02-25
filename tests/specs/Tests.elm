@@ -5,7 +5,6 @@ import Helpers exposing (expectAt, lengthAt)
 import Json.Decode as Decode
 import JsonSchema exposing (..)
 import JsonSchema.Encoder exposing (encoder)
-import JsonSchema.Model exposing (Schema)
 import Test exposing (..)
 
 

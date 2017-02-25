@@ -1,4 +1,9 @@
-module JsonSchema.Fuzz exposing (..)
+module JsonSchema.Fuzz exposing (schemaString, schemaValue)
+
+{-| Fuzzers for json structures corresponding to a certain schema.
+
+@docs schemaString, schemaValue
+-}
 
 import Fuzz exposing (Fuzzer)
 import Fuzz.Extra
@@ -8,12 +13,16 @@ import JsonSchema.Model exposing (..)
 import Random
 
 
+{-| Fuzzer that generates json strings.
+-}
 schemaString : Schema -> Fuzzer String
 schemaString schema =
     schemaValue schema
         |> Fuzz.map (Encode.encode 2)
 
 
+{-| Fuzzer that generates json values.
+-}
 schemaValue : Schema -> Fuzzer Value
 schemaValue schema =
     case schema of

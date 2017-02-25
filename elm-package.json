@@ -6,7 +6,7 @@
     "source-directories": [
         "./src"
     ],
-    "exposed-modules": [],
+    "exposed-modules": ["JsonSchema", "JsonSchema.Fuzz"],
     "dependencies": {
         "elm-community/elm-test": "3.1.0 <= v < 4.0.0",
         "elm-community/maybe-extra": "3.1.0 <= v < 4.0.0",

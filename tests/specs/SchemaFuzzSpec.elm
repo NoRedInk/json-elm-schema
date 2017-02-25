@@ -5,7 +5,6 @@ import Json.Encode as Encode
 import JsonSchema exposing (..)
 import JsonSchema.Encoder as Encoder
 import JsonSchema.Fuzz exposing (schemaValue)
-import JsonSchema.Model exposing (Schema)
 import Native.JsonSchema
 import Test exposing (..)
 
