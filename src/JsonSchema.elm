@@ -55,6 +55,14 @@ defaultNumber =
     }
 
 
+defaultCombinatorSchema : BaseCombinatorSchema
+defaultCombinatorSchema =
+    { title = Nothing
+    , description = Nothing
+    , subSchemas = []
+    }
+
+
 type alias BaseSchemaProperty extras =
     BaseSchema extras -> BaseSchema extras
 
@@ -81,6 +89,10 @@ type alias IntegerSchemaProperty =
 
 type alias NumberSchemaProperty =
     NumberSchema -> NumberSchema
+
+
+type alias BaseCombinatorSchemaProperty =
+    BaseCombinatorSchema -> BaseCombinatorSchema
 
 
 required : String -> Schema -> ObjectProperty
@@ -218,3 +230,21 @@ null : List (BaseSchemaProperty {}) -> Schema
 null props =
     List.foldl (<|) defaultBaseSchema props
         |> Null
+
+
+oneOf : List BaseCombinatorSchemaProperty -> List Schema -> Schema
+oneOf props subSchemas =
+    List.foldl (<|) { defaultCombinatorSchema | subSchemas = subSchemas } props
+        |> OneOf
+
+
+allOf : List BaseCombinatorSchemaProperty -> List Schema -> Schema
+allOf props subSchemas =
+    List.foldl (<|) { defaultCombinatorSchema | subSchemas = subSchemas } props
+        |> AllOf
+
+
+anyOf : List BaseCombinatorSchemaProperty -> List Schema -> Schema
+anyOf props subSchemas =
+    List.foldl (<|) { defaultCombinatorSchema | subSchemas = subSchemas } props
+        |> AnyOf

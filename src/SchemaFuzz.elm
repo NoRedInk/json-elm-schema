@@ -38,6 +38,15 @@ schemaValue schema =
         Null _ ->
             nullFuzzer
 
+        AnyOf anyOfSchema ->
+            anyOfFuzzer anyOfSchema
+
+        OneOf oneOfSchema ->
+            Debug.crash "Fuzzing a oneOf schema is currently not supported"
+
+        AllOf allOfSchema ->
+            Debug.crash "Fuzzing an allOf schema is currently not supported"
+
 
 objectFuzzer : ObjectSchema -> Fuzzer Value
 objectFuzzer objectSchema =
@@ -168,3 +177,10 @@ nullFuzzer : Fuzzer Value
 nullFuzzer =
     Encode.null
         |> Fuzz.constant
+
+
+anyOfFuzzer : BaseCombinatorSchema -> Fuzzer Value
+anyOfFuzzer anyOfSchema =
+    anyOfSchema.subSchemas
+        |> List.map (schemaValue >> (,) 1)
+        |> Fuzz.frequencyOrCrash

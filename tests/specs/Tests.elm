@@ -1,10 +1,11 @@
 module Tests exposing (spec)
 
-import JsonSchema exposing (..)
-import Model exposing (Schema)
 import Encoder exposing (encoder)
+import Expect
 import Helpers exposing (expectAt, lengthAt)
 import Json.Decode as Decode
+import JsonSchema exposing (..)
+import Model exposing (Schema)
 import Test exposing (..)
 
 
@@ -18,6 +19,7 @@ spec =
         , numberSchemaSpec
         , booleanSchemaSpec
         , nullSchemaSpec
+        , schemaCombinersSpec
         ]
 
 
@@ -331,4 +333,50 @@ nullSchemaSpec =
                         |> expectAt
                             [ "type" ]
                             ( Decode.string, "null" )
+            ]
+
+
+schemaCombinersSpec : Test
+schemaCombinersSpec =
+    let
+        integerSchema =
+            integer []
+
+        stringSchema =
+            string []
+    in
+        describe "schema combiners"
+            [ test "oneOf" <|
+                \() ->
+                    encoder (oneOf [] [ integerSchema, stringSchema ])
+                        |> Expect.all
+                            [ expectAt
+                                [ "oneOf", "0", "type" ]
+                                ( Decode.string, "integer" )
+                            , expectAt
+                                [ "oneOf", "1", "type" ]
+                                ( Decode.string, "string" )
+                            ]
+            , test "allOf" <|
+                \() ->
+                    encoder (allOf [] [ integerSchema, stringSchema ])
+                        |> Expect.all
+                            [ expectAt
+                                [ "allOf", "0", "type" ]
+                                ( Decode.string, "integer" )
+                            , expectAt
+                                [ "allOf", "1", "type" ]
+                                ( Decode.string, "string" )
+                            ]
+            , test "anyOf" <|
+                \() ->
+                    encoder (anyOf [] [ integerSchema, stringSchema ])
+                        |> Expect.all
+                            [ expectAt
+                                [ "anyOf", "0", "type" ]
+                                ( Decode.string, "integer" )
+                            , expectAt
+                                [ "anyOf", "1", "type" ]
+                                ( Decode.string, "string" )
+                            ]
             ]

@@ -26,6 +26,7 @@ spec =
             , string [ minLength 5 ]
             , string [ maxLength 10 ]
             , string [ minLength 5, maxLength 10 ]
+            , anyOf [] [ string [], integer [] ]
             ]
 
 

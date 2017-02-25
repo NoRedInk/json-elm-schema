@@ -82,6 +82,39 @@ convert schema =
                 |> Maybe.Extra.values
                 |> Encode.object
 
+        OneOf oneOfSchema ->
+            [ Maybe.map ((,) "title" << Encode.string) oneOfSchema.title
+            , Maybe.map ((,) "description" << Encode.string) oneOfSchema.description
+            , List.map convert oneOfSchema.subSchemas
+                |> Encode.list
+                |> (,) "oneOf"
+                |> Just
+            ]
+                |> Maybe.Extra.values
+                |> Encode.object
+
+        AnyOf anyOfSchema ->
+            [ Maybe.map ((,) "title" << Encode.string) anyOfSchema.title
+            , Maybe.map ((,) "description" << Encode.string) anyOfSchema.description
+            , List.map convert anyOfSchema.subSchemas
+                |> Encode.list
+                |> (,) "anyOf"
+                |> Just
+            ]
+                |> Maybe.Extra.values
+                |> Encode.object
+
+        AllOf allOfSchema ->
+            [ Maybe.map ((,) "title" << Encode.string) allOfSchema.title
+            , Maybe.map ((,) "description" << Encode.string) allOfSchema.description
+            , List.map convert allOfSchema.subSchemas
+                |> Encode.list
+                |> (,) "allOf"
+                |> Just
+            ]
+                |> Maybe.Extra.values
+                |> Encode.object
+
 
 convertProperty : List ObjectProperty -> Encode.Value
 convertProperty properties =

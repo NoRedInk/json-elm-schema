@@ -9,6 +9,9 @@ type Schema
     | Number NumberSchema
     | Boolean (BaseSchema {})
     | Null (BaseSchema {})
+    | OneOf BaseCombinatorSchema
+    | AnyOf BaseCombinatorSchema
+    | AllOf BaseCombinatorSchema
 
 
 type alias BaseSchema extras =
@@ -56,6 +59,12 @@ type alias StringSchema =
         , maxLength : Maybe Int
         , pattern : Maybe String
         , format : Maybe StringFormat
+        }
+
+
+type alias BaseCombinatorSchema =
+    BaseSchema
+        { subSchemas : List Schema
         }
 
 
