@@ -8,14 +8,14 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/jwoudenberg/json-elm-schema.git"
+    "url": "git@github.com:NoRedInk/json-elm-schema.git"
   },
   "author": "",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/jwoudenberg/json-elm-schema/issues"
+    "url": "https://github.com/NoRedInk/json-elm-schema/issues"
   },
-  "homepage": "https://github.com/jwoudenberg/json-elm-schema#readme",
+  "homepage": "https://github.com/NoRedInk/json-elm-schema#readme",
   "devDependencies": {
     "ajv": "^4.11.3",
     "elm-test": "^0.18.2"
