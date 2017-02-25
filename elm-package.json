@@ -1,7 +1,7 @@
 {
     "version": "1.0.0",
     "summary": "write json schemas in elm",
-    "repository": "git@github.com:NoRedInk/json-elm-schema.git",
+    "repository": "https://github.com/NoRedInk/json-elm-schema.git",
     "license": "BSD3",
     "source-directories": [
         "./src"
