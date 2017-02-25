@@ -27,9 +27,3 @@ personSchema =
             ]
         ]
 ```
-
-## Plans
-- [ ] Add a cli that takes a schema written in Elm and outputs that schema in JSON.
-- [ ] Increase coverage of json schema spec.
-- [ ] Create an elm-test Schema Fuzzer that generates random json adhering to a schema.
-  This could be used for testing decoders.
