@@ -1,10 +1,10 @@
-module SchemaFuzz exposing (schemaValue, schemaString)
+module JsonSchema.Fuzz exposing (..)
 
 import Fuzz exposing (Fuzzer)
 import Fuzz.Extra
 import Json.Encode as Encode exposing (Value)
 import Maybe.Extra
-import Model exposing (..)
+import JsonSchema.Model exposing (..)
 import Random
 
 

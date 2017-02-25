@@ -1,6 +1,6 @@
 module JsonSchema exposing (..)
 
-import Model exposing (..)
+import JsonSchema.Model exposing (..)
 
 
 defaultBaseSchema : BaseSchema {}

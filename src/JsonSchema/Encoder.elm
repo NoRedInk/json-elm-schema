@@ -1,6 +1,6 @@
-module Encoder exposing (..)
+module JsonSchema.Encoder exposing (..)
 
-import Model exposing (..)
+import JsonSchema.Model exposing (..)
 import Json.Encode as Encode
 import Maybe.Extra
 

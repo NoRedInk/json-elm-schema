@@ -3,9 +3,9 @@ module SchemaFuzzSpec exposing (spec)
 import Expect exposing (pass)
 import Json.Encode as Encode
 import JsonSchema exposing (..)
-import Encoder
-import Model exposing (Schema)
-import SchemaFuzz exposing (schemaValue)
+import JsonSchema.Encoder as Encoder
+import JsonSchema.Fuzz exposing (schemaValue)
+import JsonSchema.Model exposing (Schema)
 import Native.JsonSchema
 import Test exposing (..)
 

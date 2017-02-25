@@ -1,4 +1,4 @@
-module Model exposing (..)
+module JsonSchema.Model exposing (..)
 
 
 type Schema

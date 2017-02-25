@@ -1,11 +1,11 @@
 module Tests exposing (spec)
 
-import Encoder exposing (encoder)
 import Expect
 import Helpers exposing (expectAt, lengthAt)
 import Json.Decode as Decode
 import JsonSchema exposing (..)
-import Model exposing (Schema)
+import JsonSchema.Encoder exposing (encoder)
+import JsonSchema.Model exposing (Schema)
 import Test exposing (..)
 
 
