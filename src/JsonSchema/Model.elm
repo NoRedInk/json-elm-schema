@@ -21,6 +21,12 @@ type alias BaseSchema extras =
     }
 
 
+type alias WithEnumSchema primitive extras =
+    { extras
+        | enum : Maybe (List primitive)
+    }
+
+
 type alias ObjectSchema =
     BaseSchema
         { properties : List ObjectProperty
@@ -34,10 +40,12 @@ type alias ArraySchema =
 
 
 type alias BaseNumberSchema num =
-    BaseSchema
-        { minimum : Maybe num
-        , maximum : Maybe num
-        }
+    WithEnumSchema num
+        (BaseSchema
+            { minimum : Maybe num
+            , maximum : Maybe num
+            }
+        )
 
 
 type alias IntegerSchema =
@@ -54,12 +62,14 @@ type ObjectProperty
 
 
 type alias StringSchema =
-    BaseSchema
-        { minLength : Maybe Int
-        , maxLength : Maybe Int
-        , pattern : Maybe String
-        , format : Maybe StringFormat
-        }
+    WithEnumSchema String
+        (BaseSchema
+            { minLength : Maybe Int
+            , maxLength : Maybe Int
+            , pattern : Maybe String
+            , format : Maybe StringFormat
+            }
+        )
 
 
 type alias BaseCombinatorSchema =

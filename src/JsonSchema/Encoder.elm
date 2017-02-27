@@ -38,6 +38,7 @@ convert schema =
             [ Just ( "type", Encode.string "string" )
             , Maybe.map ((,) "title" << Encode.string) stringSchema.title
             , Maybe.map ((,) "description" << Encode.string) stringSchema.description
+            , Maybe.map ((,) "enum" << Encode.list << List.map Encode.string) stringSchema.enum
             , Maybe.map ((,) "minLength" << Encode.int) stringSchema.minLength
             , Maybe.map ((,) "maxLength" << Encode.int) stringSchema.maxLength
             , Maybe.map ((,) "pattern" << Encode.string) stringSchema.pattern
@@ -50,6 +51,7 @@ convert schema =
             [ Just ( "type", Encode.string "integer" )
             , Maybe.map ((,) "title" << Encode.string) integerSchema.title
             , Maybe.map ((,) "description" << Encode.string) integerSchema.description
+            , Maybe.map ((,) "enum" << Encode.list << List.map Encode.int) integerSchema.enum
             , Maybe.map ((,) "minimum" << Encode.int) integerSchema.minimum
             , Maybe.map ((,) "maximum" << Encode.int) integerSchema.maximum
             ]
@@ -60,6 +62,7 @@ convert schema =
             [ Just ( "type", Encode.string "number" )
             , Maybe.map ((,) "title" << Encode.string) numberSchema.title
             , Maybe.map ((,) "description" << Encode.string) numberSchema.description
+            , Maybe.map ((,) "enum" << Encode.list << List.map Encode.float) numberSchema.enum
             , Maybe.map ((,) "minimum" << Encode.float) numberSchema.minimum
             , Maybe.map ((,) "maximum" << Encode.float) numberSchema.maximum
             ]

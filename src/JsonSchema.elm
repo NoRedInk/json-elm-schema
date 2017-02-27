@@ -1,4 +1,4 @@
-module JsonSchema exposing (Schema, required, optional, title, description, minimum, maximum, properties, items, minLength, maxLength, pattern, format, dateTime, email, hostname, ipv4, ipv6, uri, customFormat, object, array, string, integer, number, boolean, null, oneOf, allOf, anyOf)
+module JsonSchema exposing (Schema, required, optional, title, description, enum, minimum, maximum, properties, items, minLength, maxLength, pattern, format, dateTime, email, hostname, ipv4, ipv6, uri, customFormat, object, array, string, integer, number, boolean, null, oneOf, allOf, anyOf)
 
 {-| This library allows you to write your json schema files in elm, preventing inadvertent errors.
 
@@ -9,7 +9,7 @@ module JsonSchema exposing (Schema, required, optional, title, description, mini
 @docs object, array, string, integer, number, boolean, null, oneOf, allOf, anyOf
 
 # Keywords
-@docs title, description, minimum, maximum, properties, items, minLength, maxLength, pattern, format
+@docs title, description, enum, minimum, maximum, properties, items, minLength, maxLength, pattern, format
 
 # Property constructors
 @docs required, optional
@@ -54,6 +54,7 @@ defaultString : StringSchema
 defaultString =
     { title = Nothing
     , description = Nothing
+    , enum = Nothing
     , minLength = Nothing
     , maxLength = Nothing
     , pattern = Nothing
@@ -65,6 +66,7 @@ defaultInteger : IntegerSchema
 defaultInteger =
     { title = Nothing
     , description = Nothing
+    , enum = Nothing
     , minimum = Nothing
     , maximum = Nothing
     }
@@ -74,6 +76,7 @@ defaultNumber : NumberSchema
 defaultNumber =
     { title = Nothing
     , description = Nothing
+    , enum = Nothing
     , minimum = Nothing
     , maximum = Nothing
     }
@@ -89,6 +92,10 @@ defaultCombinatorSchema =
 
 type alias BaseSchemaProperty extras =
     BaseSchema extras -> BaseSchema extras
+
+
+type alias WithEnumSchemaProperty primitive extras =
+    WithEnumSchema primitive extras -> WithEnumSchema primitive extras
 
 
 type alias ObjectSchemaProperty =
@@ -145,6 +152,13 @@ title text schema =
 description : String -> BaseSchemaProperty extras
 description text schema =
     { schema | description = Just text }
+
+
+{-| `enum` keyword
+-}
+enum : List primitive -> WithEnumSchemaProperty primitive extras
+enum allowedValues schema =
+    { schema | enum = Just allowedValues }
 
 
 {-| `minimum` keyword

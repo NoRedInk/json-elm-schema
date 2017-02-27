@@ -130,48 +130,65 @@ stringFuzzer schema =
                 Just maxLength ->
                     String.slice 0 maxLength str
     in
-        Fuzz.string
-            |> Fuzz.map expandIfTooShort
-            |> Fuzz.map cropIfTooLong
-            |> Fuzz.map Encode.string
+        case schema.enum of
+            Just enum ->
+                enum
+                    |> Fuzz.Extra.anyOrCrash
+                    |> Fuzz.map Encode.string
+
+            Nothing ->
+                Fuzz.string
+                    |> Fuzz.map expandIfTooShort
+                    |> Fuzz.map cropIfTooLong
+                    |> Fuzz.map Encode.string
 
 
 numberFuzzer : NumberSchema -> Fuzzer Value
 numberFuzzer schema =
-    case ( schema.minimum, schema.maximum ) of
-        ( Nothing, Nothing ) ->
+    case ( schema.enum, schema.minimum, schema.maximum ) of
+        ( Just enum, _, _ ) ->
+            enum
+                |> Fuzz.Extra.anyOrCrash
+                |> Fuzz.map Encode.float
+
+        ( Nothing, Nothing, Nothing ) ->
             Fuzz.float
                 |> Fuzz.map Encode.float
 
-        ( Just minimum, Just maximum ) ->
+        ( Nothing, Just minimum, Just maximum ) ->
             Fuzz.floatRange minimum maximum
                 |> Fuzz.map Encode.float
 
-        ( Just minimum, Nothing ) ->
+        ( Nothing, Just minimum, Nothing ) ->
             Fuzz.Extra.floatMinimum minimum
                 |> Fuzz.map Encode.float
 
-        ( Nothing, Just maximum ) ->
+        ( Nothing, Nothing, Just maximum ) ->
             Fuzz.Extra.floatMaximum maximum
                 |> Fuzz.map Encode.float
 
 
 integerFuzzer : IntegerSchema -> Fuzzer Value
 integerFuzzer schema =
-    case ( schema.minimum, schema.maximum ) of
-        ( Nothing, Nothing ) ->
+    case ( schema.enum, schema.minimum, schema.maximum ) of
+        ( Just enum, _, _ ) ->
+            enum
+                |> Fuzz.Extra.anyOrCrash
+                |> Fuzz.map Encode.int
+
+        ( Nothing, Nothing, Nothing ) ->
             Fuzz.int
                 |> Fuzz.map Encode.int
 
-        ( Just minimum, Just maximum ) ->
+        ( Nothing, Just minimum, Just maximum ) ->
             Fuzz.intRange minimum maximum
                 |> Fuzz.map Encode.int
 
-        ( Just minimum, Nothing ) ->
+        ( Nothing, Just minimum, Nothing ) ->
             Fuzz.intRange minimum Random.maxInt
                 |> Fuzz.map Encode.int
 
-        ( Nothing, Just maximum ) ->
+        ( Nothing, Nothing, Just maximum ) ->
             Fuzz.intRange Random.minInt maximum
                 |> Fuzz.map Encode.int
 

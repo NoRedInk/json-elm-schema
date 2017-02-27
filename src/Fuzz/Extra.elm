@@ -5,9 +5,6 @@ import Fuzz exposing (..)
 import Random.Pcg as Random
 
 
--- import Fuzz.Internal as Internal exposing (Fuzz(..))
-
-
 {-| A fuzzer for float values with a given minimum, inclusive.
 Shrunken values will also be within the range.
 -}
@@ -36,3 +33,12 @@ floatMaximum hi =
             ]
         )
         (Shrink.keepIf (\i -> i <= hi) Shrink.float)
+
+
+{-| A fuzzer that randomly selects elements in a list.
+-}
+anyOrCrash : List a -> Fuzzer a
+anyOrCrash values =
+    values
+        |> List.map (Fuzz.constant >> (,) 1)
+        |> Fuzz.frequencyOrCrash

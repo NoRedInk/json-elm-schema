@@ -14,8 +14,11 @@ spec =
         [ objectSchemaSpec
         , arraySchemaSpec
         , stringSchemaSpec
+        , stringEnumSchemaSpec
         , integerSchemaSpec
+        , integerEnumSchemaSpec
         , numberSchemaSpec
+        , numberEnumSchemaSpec
         , booleanSchemaSpec
         , nullSchemaSpec
         , schemaCombinersSpec
@@ -179,6 +182,58 @@ stringSchemaSpec =
             ]
 
 
+stringEnumSchemaSpec : Test
+stringEnumSchemaSpec =
+    let
+        stringEnumSchema : Schema
+        stringEnumSchema =
+            string
+                [ title "string schema title"
+                , enum [ "a", "b" ]
+                ]
+    in
+        describe "string enum schema"
+            [ test "title property is set" <|
+                \() ->
+                    encoder stringEnumSchema
+                        |> expectAt
+                            [ "title" ]
+                            ( Decode.string, "string schema title" )
+            , test "enum property is set" <|
+                \() ->
+                    encoder stringEnumSchema
+                        |> expectAt
+                            [ "enum" ]
+                            ( Decode.list Decode.string, [ "a", "b" ] )
+            ]
+
+
+integerEnumSchemaSpec : Test
+integerEnumSchemaSpec =
+    let
+        integerEnumSchema : Schema
+        integerEnumSchema =
+            integer
+                [ title "integer schema title"
+                , enum [ 1, 2 ]
+                ]
+    in
+        describe "integer enum schema"
+            [ test "title property is set" <|
+                \() ->
+                    encoder integerEnumSchema
+                        |> expectAt
+                            [ "title" ]
+                            ( Decode.string, "integer schema title" )
+            , test "enum property is set" <|
+                \() ->
+                    encoder integerEnumSchema
+                        |> expectAt
+                            [ "enum" ]
+                            ( Decode.list Decode.int, [ 1, 2 ] )
+            ]
+
+
 integerSchemaSpec : Test
 integerSchemaSpec =
     let
@@ -268,6 +323,32 @@ numberSchemaSpec =
                         |> expectAt
                             [ "maximum" ]
                             ( Decode.float, 8.3 )
+            ]
+
+
+numberEnumSchemaSpec : Test
+numberEnumSchemaSpec =
+    let
+        numberEnumSchema : Schema
+        numberEnumSchema =
+            number
+                [ title "number schema title"
+                , enum [ 1.2, 3.4 ]
+                ]
+    in
+        describe "number schema"
+            [ test "title property is set" <|
+                \() ->
+                    encoder numberEnumSchema
+                        |> expectAt
+                            [ "title" ]
+                            ( Decode.string, "number schema title" )
+            , test "description property is set" <|
+                \() ->
+                    encoder numberEnumSchema
+                        |> expectAt
+                            [ "enum" ]
+                            ( Decode.list Decode.float, [ 1.2, 3.4 ] )
             ]
 
 
