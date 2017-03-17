@@ -1,13 +1,35 @@
-module JsonSchema.Encoder exposing (encode, encodeValue)
+module JsonSchema.Encoder exposing (encode, encodeValue, EncoderProgram, encodeSchemaProgram)
 
 {-| Encoding elm json schemas to real json.
 
-@docs encode, encodeValue
+@docs encode, encodeValue, EncoderProgram, encodeSchemaProgram
 -}
 
 import JsonSchema.Model exposing (..)
 import Json.Encode as Encode
 import Maybe.Extra
+
+
+{-| Type of the encodeSchemaProgram.
+-}
+type alias EncoderProgram =
+    Platform.Program Never () ()
+
+
+{-| A program to use for encoding a schema.
+
+    main : EncoderProgram
+    main = encoderSchemaProgram mySchema emit
+
+    port emit : String -> Cmd a
+-}
+encodeSchemaProgram : Schema -> (String -> Cmd ()) -> EncoderProgram
+encodeSchemaProgram schema emit =
+    Platform.program
+        { init = ( (), emit (encode schema) )
+        , update = (\_ _ -> ( (), Cmd.none ))
+        , subscriptions = (\_ -> Sub.none)
+        }
 
 
 {-| Encode an elm json schema into a json string.
