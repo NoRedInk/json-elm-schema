@@ -60,20 +60,8 @@ schemaValue schema =
 objectFuzzer : ObjectSchema -> Fuzzer Value
 objectFuzzer objectSchema =
     List.map propertyFuzzer objectSchema.properties
-        |> sequence
+        |> Fuzz.Extra.sequence
         |> Fuzz.map (Maybe.Extra.values >> Encode.object)
-
-
-sequence : List (Fuzzer a) -> Fuzzer (List a)
-sequence fuzzers =
-    List.foldl
-        (\fuzzer listFuzzer ->
-            Fuzz.constant (::)
-                |> Fuzz.andMap fuzzer
-                |> Fuzz.andMap listFuzzer
-        )
-        (Fuzz.constant [])
-        fuzzers
 
 
 propertyFuzzer : ObjectProperty -> Fuzzer (Maybe ( String, Value ))
@@ -91,15 +79,30 @@ propertyFuzzer objectProperty =
 
 arrayFuzzer : ArraySchema -> Fuzzer Value
 arrayFuzzer arraySchema =
-    case arraySchema.items of
-        Nothing ->
+    case ( arraySchema.items, arraySchema.minItems, arraySchema.maxItems ) of
+        ( Nothing, _, _ ) ->
             -- TODO: do something more interesting in the case the user hasn't defined a schema for the items.
             Fuzz.constant []
                 |> Fuzz.map Encode.list
 
-        Just subSchema ->
+        ( Just subSchema, Nothing, Nothing ) ->
             schemaValue subSchema
                 |> Fuzz.list
+                |> Fuzz.map Encode.list
+
+        ( Just subSchema, Just minItems, Nothing ) ->
+            schemaValue subSchema
+                |> Fuzz.Extra.variableList minItems (minItems + 100)
+                |> Fuzz.map Encode.list
+
+        ( Just subSchema, Nothing, Just maxItems ) ->
+            schemaValue subSchema
+                |> Fuzz.Extra.variableList 0 maxItems
+                |> Fuzz.map Encode.list
+
+        ( Just subSchema, Just minItems, Just maxItems ) ->
+            schemaValue subSchema
+                |> Fuzz.Extra.variableList minItems maxItems
                 |> Fuzz.map Encode.list
 
 

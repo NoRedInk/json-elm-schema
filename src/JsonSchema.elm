@@ -1,4 +1,4 @@
-module JsonSchema exposing (Schema, required, optional, title, description, enum, minimum, maximum, properties, items, minLength, maxLength, pattern, format, dateTime, email, hostname, ipv4, ipv6, uri, customFormat, object, array, string, integer, number, boolean, null, oneOf, allOf, anyOf)
+module JsonSchema exposing (Schema, required, optional, title, description, enum, minimum, maximum, properties, items, minItems, maxItems, minLength, maxLength, pattern, format, dateTime, email, hostname, ipv4, ipv6, uri, customFormat, object, array, string, integer, number, boolean, null, oneOf, allOf, anyOf)
 
 {-| This library allows you to write your json schema files in elm, preventing inadvertent errors.
 
@@ -9,7 +9,7 @@ module JsonSchema exposing (Schema, required, optional, title, description, enum
 @docs object, array, string, integer, number, boolean, null, oneOf, allOf, anyOf
 
 # Keywords
-@docs title, description, enum, minimum, maximum, properties, items, minLength, maxLength, pattern, format
+@docs title, description, enum, minimum, maximum, properties, items, minItems, maxItems, minLength, maxLength, pattern, format
 
 # Property constructors
 @docs required, optional
@@ -47,6 +47,8 @@ defaultArray =
     { title = Nothing
     , description = Nothing
     , items = Nothing
+    , minItems = Nothing
+    , maxItems = Nothing
     }
 
 
@@ -187,6 +189,20 @@ properties properties schema =
 items : Schema -> ArraySchemaProperty
 items items schema =
     { schema | items = Just items }
+
+
+{-| `minItems` keyword
+-}
+minItems : Int -> ArraySchemaProperty
+minItems min schema =
+    { schema | minItems = Just min }
+
+
+{-| `maxItems` keyword
+-}
+maxItems : Int -> ArraySchemaProperty
+maxItems max schema =
+    { schema | maxItems = Just max }
 
 
 {-| `minLength` keyword

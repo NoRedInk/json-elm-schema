@@ -36,6 +36,8 @@ type alias ObjectSchema =
 type alias ArraySchema =
     BaseSchema
         { items : Maybe Schema
+        , minItems : Maybe Int
+        , maxItems : Maybe Int
         }
 
 

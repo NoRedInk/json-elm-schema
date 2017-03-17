@@ -29,9 +29,15 @@ spec =
             , string [ minLength 5, maxLength 10 ]
             , string [ enum [ "a", "b" ] ]
             , anyOf [] [ string [], integer [] ]
+            , array [ items (string []) ]
+            , array [ items (string []), minItems 5 ]
+            , array [ items (string []), maxItems 10 ]
+            , array [ items (string []), minItems 5, maxItems 10 ]
             ]
 
 
+{-| Test a schema fuzzer by checking all the values it produces conform to the schema it is based on.
+-}
 testSchemaFuzzer : Schema -> Test
 testSchemaFuzzer schema =
     fuzz (schemaValue schema) ("fuzzer works with schema: " ++ (toString schema)) <|

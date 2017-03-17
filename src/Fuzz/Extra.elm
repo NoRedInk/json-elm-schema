@@ -42,3 +42,25 @@ anyOrCrash values =
     values
         |> List.map (Fuzz.constant >> (,) 1)
         |> Fuzz.frequencyOrCrash
+
+
+{-| A fuzzer that creates lists with bounded lengths.
+-}
+variableList : Int -> Int -> Fuzzer a -> Fuzzer (List a)
+variableList min max item =
+    intRange min max
+        |> Fuzz.andThen (\length -> List.repeat length item |> sequence)
+
+
+{-| Sequence a list of fuzzers into a fuzzer of a list
+-}
+sequence : List (Fuzzer a) -> Fuzzer (List a)
+sequence fuzzers =
+    List.foldl
+        (\fuzzer listFuzzer ->
+            Fuzz.constant (::)
+                |> Fuzz.andMap fuzzer
+                |> Fuzz.andMap listFuzzer
+        )
+        (Fuzz.constant [])
+        fuzzers

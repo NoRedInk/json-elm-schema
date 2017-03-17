@@ -30,6 +30,8 @@ convert schema =
             , Maybe.map ((,) "title" << Encode.string) arraySchema.title
             , Maybe.map ((,) "description" << Encode.string) arraySchema.description
             , Maybe.map ((,) "items" << convert) arraySchema.items
+            , Maybe.map ((,) "minItems" << Encode.int) arraySchema.minItems
+            , Maybe.map ((,) "maxItems" << Encode.int) arraySchema.maxItems
             ]
                 |> Maybe.Extra.values
                 |> Encode.object

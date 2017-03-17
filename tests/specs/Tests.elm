@@ -92,6 +92,8 @@ arraySchemaSpec =
                 [ title "array schema title"
                 , description "array schema description"
                 , items <| string []
+                , minItems 3
+                , maxItems 6
                 ]
     in
         describe "array schema"
@@ -119,6 +121,18 @@ arraySchemaSpec =
                         |> expectAt
                             [ "items", "type" ]
                             ( Decode.string, "string" )
+            , test "minItems property contains nested schema" <|
+                \() ->
+                    encoder arraySchema
+                        |> expectAt
+                            [ "minItems" ]
+                            ( Decode.int, 3 )
+            , test "maxItems property contains nested schema" <|
+                \() ->
+                    encoder arraySchema
+                        |> expectAt
+                            [ "maxItems" ]
+                            ( Decode.int, 6 )
             ]
 
 
