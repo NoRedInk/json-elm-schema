@@ -2,12 +2,18 @@
 var fs = require('fs')
 var temp = require('temp').track()
 var compiler = require('node-elm-compiler')
+var meow = require('meow')
+
+var cli = meow(`
+    Usage
+      $ elm-json-scema <elm-schema-file>
+`)
 
 if (!fs.existsSync('./elm-package.json')) {
   fail('Error: This command needs to be executed from the root of the elm project.')
 }
 
-var sourcePath = process.argv[2]
+var sourcePath = cli.input[0]
 var targetPath = temp.path({ suffix: '.js' })
 compiler.compileSync([sourcePath], {
   yes: true,

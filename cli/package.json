@@ -1,6 +1,6 @@
 {
   "name": "elm-json-schema-compiler",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "Compile elm json schema's to regular json schemas",
   "main": "index.js",
   "bin": {
@@ -17,6 +17,7 @@
   },
   "homepage": "https://github.com/NoRedInk/json-elm-schema#readme",
   "dependencies": {
+    "meow": "3.7.0",
     "node-elm-compiler": "4.3.0",
     "temp": "0.8.3"
   }
