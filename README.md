@@ -27,3 +27,7 @@ personSchema =
             ]
         ]
 ```
+
+## Links
+- [A fully working example](https://github.com/NoRedInk/json-elm-schema/tree/master/example)
+- [A CLI tool for compiling your elm json schemas to regular json schemas](https://github.com/NoRedInk/json-elm-schema/tree/master/cli)
