@@ -51,7 +51,9 @@ schemaValue schema =
             anyOfFuzzer anyOfSchema
 
         OneOf oneOfSchema ->
-            Debug.crash "Fuzzing a oneOf schema is currently not supported"
+            -- `oneOf` explicitly demands that a value corresponds to one of the provided schema's and none of the others.
+            -- Implementing this will probably require merging the subschema's properties together into a single schema.
+            Debug.crash "Fuzzing a oneOf schema is currently not supported. anyOf is supported, so perhaps you can use that?"
 
         AllOf allOfSchema ->
             Debug.crash "Fuzzing an allOf schema is currently not supported"
