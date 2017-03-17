@@ -1,13 +1,10 @@
 {
-  "name": "elm-json-schema",
+  "name": "elm-json-schema-compiler",
   "version": "0.1.0",
-  "description": "Write your JSON schema's in Elm.",
+  "description": "Compile elm json schema's to regular json schemas",
   "main": "index.js",
-  "directories": {
-    "test": "tests"
-  },
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+  "bin": {
+    "elm-json-schema": "./index.js"
   },
   "repository": {
     "type": "git",
@@ -20,8 +17,7 @@
   },
   "homepage": "https://github.com/NoRedInk/json-elm-schema#readme",
   "dependencies": {
-    "n-readlines": "^0.2.7",
-    "node-elm-compiler": "^4.3.0",
-    "tmp": "0.0.31"
+    "node-elm-compiler": "4.3.0",
+    "temp": "0.8.3"
   }
 }
