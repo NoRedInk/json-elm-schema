@@ -1,5 +1,5 @@
 {
-    "version": "1.1.0",
+    "version": "1.2.0",
     "summary": "write json schemas in elm",
     "repository": "https://github.com/NoRedInk/json-elm-schema.git",
     "license": "BSD3",
@@ -8,7 +8,8 @@
     ],
     "exposed-modules": [
         "JsonSchema",
-        "JsonSchema.Fuzz"
+        "JsonSchema.Fuzz",
+        "JsonSchema.Encoder"
     ],
     "dependencies": {
         "elm-community/elm-test": "3.1.0 <= v < 4.0.0",

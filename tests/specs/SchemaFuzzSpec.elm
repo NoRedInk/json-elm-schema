@@ -47,7 +47,7 @@ testSchemaFuzzer schema =
                     Encode.encode 2 value
 
                 jsonSchema =
-                    Encoder.encoder schema
+                    Encoder.encode schema
             in
                 Native.JsonSchema.validate jsonSchema jsonValue
                     |> expectOk

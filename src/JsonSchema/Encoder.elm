@@ -1,19 +1,28 @@
-module JsonSchema.Encoder exposing (..)
+module JsonSchema.Encoder exposing (encode, encodeValue)
+
+{-| Encoding elm json schemas to real json.
+
+@docs encode, encodeValue
+-}
 
 import JsonSchema.Model exposing (..)
 import Json.Encode as Encode
 import Maybe.Extra
 
 
-encoder : Schema -> String
-encoder schema =
+{-| Encode an elm json schema into a json string.
+-}
+encode : Schema -> String
+encode schema =
     schema
-        |> convert
-        |> Encode.encode 4
+        |> encodeValue
+        |> Encode.encode 2
 
 
-convert : Schema -> Encode.Value
-convert schema =
+{-| Encode an elm json schema into a json value.
+-}
+encodeValue : Schema -> Encode.Value
+encodeValue schema =
     case schema of
         Object objectSchema ->
             [ Just ( "type", Encode.string "object" )
@@ -29,7 +38,7 @@ convert schema =
             [ Just ( "type", Encode.string "array" )
             , Maybe.map ((,) "title" << Encode.string) arraySchema.title
             , Maybe.map ((,) "description" << Encode.string) arraySchema.description
-            , Maybe.map ((,) "items" << convert) arraySchema.items
+            , Maybe.map ((,) "items" << encodeValue) arraySchema.items
             , Maybe.map ((,) "minItems" << Encode.int) arraySchema.minItems
             , Maybe.map ((,) "maxItems" << Encode.int) arraySchema.maxItems
             ]
@@ -90,7 +99,7 @@ convert schema =
         OneOf oneOfSchema ->
             [ Maybe.map ((,) "title" << Encode.string) oneOfSchema.title
             , Maybe.map ((,) "description" << Encode.string) oneOfSchema.description
-            , List.map convert oneOfSchema.subSchemas
+            , List.map encodeValue oneOfSchema.subSchemas
                 |> Encode.list
                 |> (,) "oneOf"
                 |> Just
@@ -101,7 +110,7 @@ convert schema =
         AnyOf anyOfSchema ->
             [ Maybe.map ((,) "title" << Encode.string) anyOfSchema.title
             , Maybe.map ((,) "description" << Encode.string) anyOfSchema.description
-            , List.map convert anyOfSchema.subSchemas
+            , List.map encodeValue anyOfSchema.subSchemas
                 |> Encode.list
                 |> (,) "anyOf"
                 |> Just
@@ -112,7 +121,7 @@ convert schema =
         AllOf allOfSchema ->
             [ Maybe.map ((,) "title" << Encode.string) allOfSchema.title
             , Maybe.map ((,) "description" << Encode.string) allOfSchema.description
-            , List.map convert allOfSchema.subSchemas
+            , List.map encodeValue allOfSchema.subSchemas
                 |> Encode.list
                 |> (,) "allOf"
                 |> Just
@@ -128,10 +137,10 @@ convertProperty properties =
             (\property ->
                 case property of
                     Required name schema ->
-                        ( name, convert schema )
+                        ( name, encodeValue schema )
 
                     Optional name schema ->
-                        ( name, convert schema )
+                        ( name, encodeValue schema )
             )
         |> Encode.object
 

@@ -4,7 +4,7 @@ import Expect
 import Helpers exposing (expectAt, lengthAt)
 import Json.Decode as Decode
 import JsonSchema exposing (..)
-import JsonSchema.Encoder exposing (encoder)
+import JsonSchema.Encoder exposing (encode)
 import Test exposing (..)
 
 
@@ -42,41 +42,41 @@ objectSchemaSpec =
         describe "object schema"
             [ test "title property is set" <|
                 \() ->
-                    encoder objectSchema
+                    encode objectSchema
                         |> expectAt
                             [ "title" ]
                             ( Decode.string, "object schema title" )
             , test "description property is set" <|
                 \() ->
-                    encoder objectSchema
+                    encode objectSchema
                         |> expectAt
                             [ "description" ]
                             ( Decode.string, "object schema description" )
             , test "has the right type" <|
                 \() ->
-                    encoder objectSchema
+                    encode objectSchema
                         |> expectAt
                             [ "type" ]
                             ( Decode.string, "object" )
             , test "adds the right properties to 'required'" <|
                 \() ->
-                    encoder objectSchema
+                    encode objectSchema
                         |> expectAt
                             [ "required", "0" ]
                             ( Decode.string, "lastName" )
             , test "array 'required' has correct length" <|
                 \() ->
-                    encoder objectSchema
+                    encode objectSchema
                         |> lengthAt [ "required" ] 1
             , test "first object property exists as nested schema" <|
                 \() ->
-                    encoder objectSchema
+                    encode objectSchema
                         |> expectAt
                             [ "properties", "firstName", "type" ]
                             ( Decode.string, "string" )
             , test "second object property exists as nested schema" <|
                 \() ->
-                    encoder objectSchema
+                    encode objectSchema
                         |> expectAt
                             [ "properties", "lastName", "type" ]
                             ( Decode.string, "string" )
@@ -99,37 +99,37 @@ arraySchemaSpec =
         describe "array schema"
             [ test "title property is set" <|
                 \() ->
-                    encoder arraySchema
+                    encode arraySchema
                         |> expectAt
                             [ "title" ]
                             ( Decode.string, "array schema title" )
             , test "description property is set" <|
                 \() ->
-                    encoder arraySchema
+                    encode arraySchema
                         |> expectAt
                             [ "description" ]
                             ( Decode.string, "array schema description" )
             , test "has the right type" <|
                 \() ->
-                    encoder arraySchema
+                    encode arraySchema
                         |> expectAt
                             [ "type" ]
                             ( Decode.string, "array" )
             , test "items property contains nested schema" <|
                 \() ->
-                    encoder arraySchema
+                    encode arraySchema
                         |> expectAt
                             [ "items", "type" ]
                             ( Decode.string, "string" )
             , test "minItems property contains nested schema" <|
                 \() ->
-                    encoder arraySchema
+                    encode arraySchema
                         |> expectAt
                             [ "minItems" ]
                             ( Decode.int, 3 )
             , test "maxItems property contains nested schema" <|
                 \() ->
-                    encoder arraySchema
+                    encode arraySchema
                         |> expectAt
                             [ "maxItems" ]
                             ( Decode.int, 6 )
@@ -153,43 +153,43 @@ stringSchemaSpec =
         describe "string schema"
             [ test "title property is set" <|
                 \() ->
-                    encoder stringSchema
+                    encode stringSchema
                         |> expectAt
                             [ "title" ]
                             ( Decode.string, "string schema title" )
             , test "description property is set" <|
                 \() ->
-                    encoder stringSchema
+                    encode stringSchema
                         |> expectAt
                             [ "description" ]
                             ( Decode.string, "string schema description" )
             , test "has the right type" <|
                 \() ->
-                    encoder stringSchema
+                    encode stringSchema
                         |> expectAt
                             [ "type" ]
                             ( Decode.string, "string" )
             , test "minLength property is set" <|
                 \() ->
-                    encoder stringSchema
+                    encode stringSchema
                         |> expectAt
                             [ "minLength" ]
                             ( Decode.int, 2 )
             , test "maxLength property is set" <|
                 \() ->
-                    encoder stringSchema
+                    encode stringSchema
                         |> expectAt
                             [ "maxLength" ]
                             ( Decode.int, 8 )
             , test "pattern property is set" <|
                 \() ->
-                    encoder stringSchema
+                    encode stringSchema
                         |> expectAt
                             [ "pattern" ]
                             ( Decode.string, "^foo$" )
             , test "format property is set" <|
                 \() ->
-                    encoder stringSchema
+                    encode stringSchema
                         |> expectAt
                             [ "format" ]
                             ( Decode.string, "date-time" )
@@ -209,13 +209,13 @@ stringEnumSchemaSpec =
         describe "string enum schema"
             [ test "title property is set" <|
                 \() ->
-                    encoder stringEnumSchema
+                    encode stringEnumSchema
                         |> expectAt
                             [ "title" ]
                             ( Decode.string, "string schema title" )
             , test "enum property is set" <|
                 \() ->
-                    encoder stringEnumSchema
+                    encode stringEnumSchema
                         |> expectAt
                             [ "enum" ]
                             ( Decode.list Decode.string, [ "a", "b" ] )
@@ -235,13 +235,13 @@ integerEnumSchemaSpec =
         describe "integer enum schema"
             [ test "title property is set" <|
                 \() ->
-                    encoder integerEnumSchema
+                    encode integerEnumSchema
                         |> expectAt
                             [ "title" ]
                             ( Decode.string, "integer schema title" )
             , test "enum property is set" <|
                 \() ->
-                    encoder integerEnumSchema
+                    encode integerEnumSchema
                         |> expectAt
                             [ "enum" ]
                             ( Decode.list Decode.int, [ 1, 2 ] )
@@ -263,31 +263,31 @@ integerSchemaSpec =
         describe "integer schema"
             [ test "title property is set" <|
                 \() ->
-                    encoder integerSchema
+                    encode integerSchema
                         |> expectAt
                             [ "title" ]
                             ( Decode.string, "integer schema title" )
             , test "description property is set" <|
                 \() ->
-                    encoder integerSchema
+                    encode integerSchema
                         |> expectAt
                             [ "description" ]
                             ( Decode.string, "integer schema description" )
             , test "has the right type" <|
                 \() ->
-                    encoder integerSchema
+                    encode integerSchema
                         |> expectAt
                             [ "type" ]
                             ( Decode.string, "integer" )
             , test "minimum property is set" <|
                 \() ->
-                    encoder integerSchema
+                    encode integerSchema
                         |> expectAt
                             [ "minimum" ]
                             ( Decode.int, 2 )
             , test "maximum property is set" <|
                 \() ->
-                    encoder integerSchema
+                    encode integerSchema
                         |> expectAt
                             [ "maximum" ]
                             ( Decode.int, 8 )
@@ -309,31 +309,31 @@ numberSchemaSpec =
         describe "number schema"
             [ test "title property is set" <|
                 \() ->
-                    encoder numberSchema
+                    encode numberSchema
                         |> expectAt
                             [ "title" ]
                             ( Decode.string, "number schema title" )
             , test "description property is set" <|
                 \() ->
-                    encoder numberSchema
+                    encode numberSchema
                         |> expectAt
                             [ "description" ]
                             ( Decode.string, "number schema description" )
             , test "has the right type" <|
                 \() ->
-                    encoder numberSchema
+                    encode numberSchema
                         |> expectAt
                             [ "type" ]
                             ( Decode.string, "number" )
             , test "minimum property is set" <|
                 \() ->
-                    encoder numberSchema
+                    encode numberSchema
                         |> expectAt
                             [ "minimum" ]
                             ( Decode.float, 2.5 )
             , test "maximum property is set" <|
                 \() ->
-                    encoder numberSchema
+                    encode numberSchema
                         |> expectAt
                             [ "maximum" ]
                             ( Decode.float, 8.3 )
@@ -353,13 +353,13 @@ numberEnumSchemaSpec =
         describe "number schema"
             [ test "title property is set" <|
                 \() ->
-                    encoder numberEnumSchema
+                    encode numberEnumSchema
                         |> expectAt
                             [ "title" ]
                             ( Decode.string, "number schema title" )
             , test "description property is set" <|
                 \() ->
-                    encoder numberEnumSchema
+                    encode numberEnumSchema
                         |> expectAt
                             [ "enum" ]
                             ( Decode.list Decode.float, [ 1.2, 3.4 ] )
@@ -379,19 +379,19 @@ booleanSchemaSpec =
         describe "boolean schema"
             [ test "title property is set" <|
                 \() ->
-                    encoder booleanSchema
+                    encode booleanSchema
                         |> expectAt
                             [ "title" ]
                             ( Decode.string, "boolean schema title" )
             , test "description property is set" <|
                 \() ->
-                    encoder booleanSchema
+                    encode booleanSchema
                         |> expectAt
                             [ "description" ]
                             ( Decode.string, "boolean schema description" )
             , test "has the right type" <|
                 \() ->
-                    encoder booleanSchema
+                    encode booleanSchema
                         |> expectAt
                             [ "type" ]
                             ( Decode.string, "boolean" )
@@ -411,19 +411,19 @@ nullSchemaSpec =
         describe "null schema"
             [ test "title property is set" <|
                 \() ->
-                    encoder nullSchema
+                    encode nullSchema
                         |> expectAt
                             [ "title" ]
                             ( Decode.string, "null schema title" )
             , test "description property is set" <|
                 \() ->
-                    encoder nullSchema
+                    encode nullSchema
                         |> expectAt
                             [ "description" ]
                             ( Decode.string, "null schema description" )
             , test "has the right type" <|
                 \() ->
-                    encoder nullSchema
+                    encode nullSchema
                         |> expectAt
                             [ "type" ]
                             ( Decode.string, "null" )
@@ -442,7 +442,7 @@ schemaCombinersSpec =
         describe "schema combiners"
             [ test "oneOf" <|
                 \() ->
-                    encoder (oneOf [] [ integerSchema, stringSchema ])
+                    encode (oneOf [] [ integerSchema, stringSchema ])
                         |> Expect.all
                             [ expectAt
                                 [ "oneOf", "0", "type" ]
@@ -453,7 +453,7 @@ schemaCombinersSpec =
                             ]
             , test "allOf" <|
                 \() ->
-                    encoder (allOf [] [ integerSchema, stringSchema ])
+                    encode (allOf [] [ integerSchema, stringSchema ])
                         |> Expect.all
                             [ expectAt
                                 [ "allOf", "0", "type" ]
@@ -464,7 +464,7 @@ schemaCombinersSpec =
                             ]
             , test "anyOf" <|
                 \() ->
-                    encoder (anyOf [] [ integerSchema, stringSchema ])
+                    encode (anyOf [] [ integerSchema, stringSchema ])
                         |> Expect.all
                             [ expectAt
                                 [ "anyOf", "0", "type" ]
