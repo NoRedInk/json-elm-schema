@@ -1,11 +1,14 @@
 module Tests exposing (spec)
 
 import Expect
-import Helpers exposing (expectAt, lengthAt)
+import Helpers exposing (expectAt, lengthAt, expectEqualResult)
 import Json.Decode as Decode
+import Json.Encode as Encode
 import JsonSchema exposing (..)
-import JsonSchema.Encoder exposing (encode)
+import JsonSchema.Encoder exposing (encode, encodeValue)
+import JsonSchema.Decoder exposing (decoder)
 import Test exposing (..)
+import JsonSchema.Model as Model
 
 
 spec : Test
@@ -21,7 +24,16 @@ spec =
         , numberEnumSchemaSpec
         , booleanSchemaSpec
         , nullSchemaSpec
-        , schemaCombinersSpec
+        , oneOfSpec
+        , anyOfSpec
+        , allOfSpec
+        , formatDateTime
+        , formatEmail
+        , formatHostname
+        , formatIpv4
+        , formatIpv6
+        , formatUri
+        , formatCustom
         ]
 
 
@@ -80,6 +92,11 @@ objectSchemaSpec =
                         |> expectAt
                             [ "properties", "lastName", "type" ]
                             ( Decode.string, "string" )
+            , test "decoder" <|
+                \() ->
+                    encode objectSchema
+                        |> Decode.decodeString decoder
+                        |> expectEqualResult objectSchema
             ]
 
 
@@ -133,6 +150,11 @@ arraySchemaSpec =
                         |> expectAt
                             [ "maxItems" ]
                             ( Decode.int, 6 )
+            , test "decoder" <|
+                \() ->
+                    encode arraySchema
+                        |> Decode.decodeString decoder
+                        |> expectEqualResult arraySchema
             ]
 
 
@@ -193,6 +215,11 @@ stringSchemaSpec =
                         |> expectAt
                             [ "format" ]
                             ( Decode.string, "date-time" )
+            , test "decoder" <|
+                \() ->
+                    encode stringSchema
+                        |> Decode.decodeString decoder
+                        |> expectEqualResult stringSchema
             ]
 
 
@@ -219,6 +246,11 @@ stringEnumSchemaSpec =
                         |> expectAt
                             [ "enum" ]
                             ( Decode.list Decode.string, [ "a", "b" ] )
+            , test "decoder" <|
+                \() ->
+                    encode stringEnumSchema
+                        |> Decode.decodeString decoder
+                        |> expectEqualResult stringEnumSchema
             ]
 
 
@@ -245,6 +277,11 @@ integerEnumSchemaSpec =
                         |> expectAt
                             [ "enum" ]
                             ( Decode.list Decode.int, [ 1, 2 ] )
+            , test "decoder" <|
+                \() ->
+                    encode integerEnumSchema
+                        |> Decode.decodeString decoder
+                        |> expectEqualResult integerEnumSchema
             ]
 
 
@@ -291,6 +328,11 @@ integerSchemaSpec =
                         |> expectAt
                             [ "maximum" ]
                             ( Decode.int, 8 )
+            , test "decoder" <|
+                \() ->
+                    encode integerSchema
+                        |> Decode.decodeString decoder
+                        |> expectEqualResult integerSchema
             ]
 
 
@@ -337,6 +379,11 @@ numberSchemaSpec =
                         |> expectAt
                             [ "maximum" ]
                             ( Decode.float, 8.3 )
+            , test "decoder" <|
+                \() ->
+                    encode numberSchema
+                        |> Decode.decodeString decoder
+                        |> expectEqualResult numberSchema
             ]
 
 
@@ -363,6 +410,11 @@ numberEnumSchemaSpec =
                         |> expectAt
                             [ "enum" ]
                             ( Decode.list Decode.float, [ 1.2, 3.4 ] )
+            , test "decoder" <|
+                \() ->
+                    encode numberEnumSchema
+                        |> Decode.decodeString decoder
+                        |> expectEqualResult numberEnumSchema
             ]
 
 
@@ -395,6 +447,11 @@ booleanSchemaSpec =
                         |> expectAt
                             [ "type" ]
                             ( Decode.string, "boolean" )
+            , test "decoder" <|
+                \() ->
+                    encode booleanSchema
+                        |> Decode.decodeString decoder
+                        |> expectEqualResult booleanSchema
             ]
 
 
@@ -427,22 +484,40 @@ nullSchemaSpec =
                         |> expectAt
                             [ "type" ]
                             ( Decode.string, "null" )
+            , test "decoder" <|
+                \() ->
+                    encode nullSchema
+                        |> Decode.decodeString decoder
+                        |> expectEqualResult nullSchema
             ]
 
 
-schemaCombinersSpec : Test
-schemaCombinersSpec =
+oneOfSpec : Test
+oneOfSpec =
     let
-        integerSchema =
-            integer []
-
-        stringSchema =
-            string []
+        oneOfSchema =
+            oneOf
+                [ title "oneOf schema title"
+                , description "oneOf schema description"
+                ]
+                [ integer [], string [] ]
     in
-        describe "schema combiners"
-            [ test "oneOf" <|
+        describe "oneOf schema"
+            [ test "title property is set" <|
                 \() ->
-                    encode (oneOf [] [ integerSchema, stringSchema ])
+                    encode oneOfSchema
+                        |> expectAt
+                            [ "title" ]
+                            ( Decode.string, "oneOf schema title" )
+            , test "description property is set" <|
+                \() ->
+                    encode oneOfSchema
+                        |> expectAt
+                            [ "description" ]
+                            ( Decode.string, "oneOf schema description" )
+            , test "subSchemas are set" <|
+                \() ->
+                    encode oneOfSchema
                         |> Expect.all
                             [ expectAt
                                 [ "oneOf", "0", "type" ]
@@ -451,20 +526,40 @@ schemaCombinersSpec =
                                 [ "oneOf", "1", "type" ]
                                 ( Decode.string, "string" )
                             ]
-            , test "allOf" <|
+            , test "decoder" <|
                 \() ->
-                    encode (allOf [] [ integerSchema, stringSchema ])
-                        |> Expect.all
-                            [ expectAt
-                                [ "allOf", "0", "type" ]
-                                ( Decode.string, "integer" )
-                            , expectAt
-                                [ "allOf", "1", "type" ]
-                                ( Decode.string, "string" )
-                            ]
-            , test "anyOf" <|
+                    encode oneOfSchema
+                        |> Decode.decodeString decoder
+                        |> expectEqualResult oneOfSchema
+            ]
+
+
+anyOfSpec : Test
+anyOfSpec =
+    let
+        anyOfSchema =
+            anyOf
+                [ title "anyOf schema title"
+                , description "anyOf schema description"
+                ]
+                [ integer [], string [] ]
+    in
+        describe "anyOf schema"
+            [ test "title property is set" <|
                 \() ->
-                    encode (anyOf [] [ integerSchema, stringSchema ])
+                    encode anyOfSchema
+                        |> expectAt
+                            [ "title" ]
+                            ( Decode.string, "anyOf schema title" )
+            , test "description property is set" <|
+                \() ->
+                    encode anyOfSchema
+                        |> expectAt
+                            [ "description" ]
+                            ( Decode.string, "anyOf schema description" )
+            , test "subSchemas are set" <|
+                \() ->
+                    encode anyOfSchema
                         |> Expect.all
                             [ expectAt
                                 [ "anyOf", "0", "type" ]
@@ -473,4 +568,205 @@ schemaCombinersSpec =
                                 [ "anyOf", "1", "type" ]
                                 ( Decode.string, "string" )
                             ]
+            , test "decoder" <|
+                \() ->
+                    encode anyOfSchema
+                        |> Decode.decodeString decoder
+                        |> expectEqualResult anyOfSchema
+            ]
+
+
+allOfSpec : Test
+allOfSpec =
+    let
+        allOfSchema =
+            allOf
+                [ title "allOf schema title"
+                , description "allOf schema description"
+                ]
+                [ integer [], string [] ]
+    in
+        describe "allOf schema"
+            [ test "title property is set" <|
+                \() ->
+                    encode allOfSchema
+                        |> expectAt
+                            [ "title" ]
+                            ( Decode.string, "allOf schema title" )
+            , test "description property is set" <|
+                \() ->
+                    encode allOfSchema
+                        |> expectAt
+                            [ "description" ]
+                            ( Decode.string, "allOf schema description" )
+            , test "subSchemas are set" <|
+                \() ->
+                    encode allOfSchema
+                        |> Expect.all
+                            [ expectAt
+                                [ "allOf", "0", "type" ]
+                                ( Decode.string, "integer" )
+                            , expectAt
+                                [ "allOf", "1", "type" ]
+                                ( Decode.string, "string" )
+                            ]
+            , test "decoder" <|
+                \() ->
+                    encode allOfSchema
+                        |> Decode.decodeString decoder
+                        |> expectEqualResult allOfSchema
+            ]
+
+
+formatDateTime : Test
+formatDateTime =
+    let
+        schema : Schema
+        schema =
+            string [ format dateTime ]
+    in
+        describe "format dateTime"
+            [ test "format property is set" <|
+                \() ->
+                    encode schema
+                        |> expectAt
+                            [ "format" ]
+                            ( Decode.string, "date-time" )
+            , test "decoder" <|
+                \() ->
+                    encode schema
+                        |> Decode.decodeString decoder
+                        |> expectEqualResult schema
+            ]
+
+
+formatEmail : Test
+formatEmail =
+    let
+        schema : Schema
+        schema =
+            string [ format email ]
+    in
+        describe "format email"
+            [ test "format property is set" <|
+                \() ->
+                    encode schema
+                        |> expectAt
+                            [ "format" ]
+                            ( Decode.string, "email" )
+            , test "decoder" <|
+                \() ->
+                    encode schema
+                        |> Decode.decodeString decoder
+                        |> expectEqualResult schema
+            ]
+
+
+formatHostname : Test
+formatHostname =
+    let
+        schema : Schema
+        schema =
+            string [ format hostname ]
+    in
+        describe "format hostname"
+            [ test "format property is set" <|
+                \() ->
+                    encode schema
+                        |> expectAt
+                            [ "format" ]
+                            ( Decode.string, "hostname" )
+            , test "decoder" <|
+                \() ->
+                    encode schema
+                        |> Decode.decodeString decoder
+                        |> expectEqualResult schema
+            ]
+
+
+formatIpv4 : Test
+formatIpv4 =
+    let
+        schema : Schema
+        schema =
+            string [ format ipv4 ]
+    in
+        describe "format ipv4"
+            [ test "format property is set" <|
+                \() ->
+                    encode schema
+                        |> expectAt
+                            [ "format" ]
+                            ( Decode.string, "ipv4" )
+            , test "decoder" <|
+                \() ->
+                    encode schema
+                        |> Decode.decodeString decoder
+                        |> expectEqualResult schema
+            ]
+
+
+formatIpv6 : Test
+formatIpv6 =
+    let
+        schema : Schema
+        schema =
+            string [ format ipv6 ]
+    in
+        describe "format ipv6"
+            [ test "format property is set" <|
+                \() ->
+                    encode schema
+                        |> expectAt
+                            [ "format" ]
+                            ( Decode.string, "ipv6" )
+            , test "decoder" <|
+                \() ->
+                    encode schema
+                        |> Decode.decodeString decoder
+                        |> expectEqualResult schema
+            ]
+
+
+formatUri : Test
+formatUri =
+    let
+        schema : Schema
+        schema =
+            string [ format uri ]
+    in
+        describe "format uri"
+            [ test "format property is set" <|
+                \() ->
+                    encode schema
+                        |> expectAt
+                            [ "format" ]
+                            ( Decode.string, "uri" )
+            , test "decoder" <|
+                \() ->
+                    encode schema
+                        |> Decode.decodeString decoder
+                        |> expectEqualResult schema
+            ]
+
+
+formatCustom : Test
+formatCustom =
+    let
+        schema : Schema
+        schema =
+            string [ format (customFormat "foo") ]
+    in
+        describe "format customFormat"
+            [ test "format property is set" <|
+                \() ->
+                    encode schema
+                        |> expectAt
+                            [ "format" ]
+                            ( Decode.string, "foo" )
+            , test "decoder" <|
+                \() ->
+                    encode schema
+                        |> Decode.decodeString decoder
+                        |> expectEqualResult schema
             ]

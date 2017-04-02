@@ -32,3 +32,13 @@ lengthAt path expectedLength jsonString =
 
             Err error ->
                 Expect.fail ("Couldn't decode schema: " ++ error)
+
+
+expectEqualResult : a -> Result String a -> Expect.Expectation
+expectEqualResult a result =
+    case result of
+        Err e ->
+            Expect.fail e
+
+        Ok a_ ->
+            Expect.equal a a_
