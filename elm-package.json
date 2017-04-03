@@ -9,9 +9,11 @@
     "exposed-modules": [
         "JsonSchema",
         "JsonSchema.Fuzz",
-        "JsonSchema.Encoder"
+        "JsonSchema.Encoder",
+        "JsonSchema.Decoder"
     ],
     "dependencies": {
+        "NoRedInk/elm-decode-pipeline": "3.0.0 <= v < 4.0.0",
         "elm-community/elm-test": "3.1.0 <= v < 4.0.0",
         "elm-community/maybe-extra": "3.1.0 <= v < 4.0.0",
         "elm-community/shrink": "2.0.0 <= v < 3.0.0",
