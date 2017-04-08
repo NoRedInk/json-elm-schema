@@ -1,11 +1,9 @@
 module SchemaFuzzSpec exposing (spec)
 
 import Expect exposing (pass)
-import Json.Encode as Encode
 import JsonSchema exposing (..)
-import JsonSchema.Encoder as Encoder
 import JsonSchema.Fuzz exposing (schemaValue)
-import Native.JsonSchema
+import JsonSchema.Validator
 import Test exposing (..)
 
 
@@ -42,22 +40,5 @@ testSchemaFuzzer : Schema -> Test
 testSchemaFuzzer schema =
     fuzz (schemaValue schema) ("fuzzer works with schema: " ++ (toString schema)) <|
         \value ->
-            let
-                jsonValue =
-                    Encode.encode 2 value
-
-                jsonSchema =
-                    Encoder.encode schema
-            in
-                Native.JsonSchema.validate jsonSchema jsonValue
-                    |> expectOk
-
-
-expectOk : Result String a -> Expect.Expectation
-expectOk result =
-    case result of
-        Ok _ ->
-            Expect.pass
-
-        Err message ->
-            Expect.fail message
+            JsonSchema.Validator.validate schema value
+                |> Expect.equal []
