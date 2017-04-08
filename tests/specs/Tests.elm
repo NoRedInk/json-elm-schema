@@ -3,12 +3,11 @@ module Tests exposing (spec)
 import Expect
 import Helpers exposing (expectAt, lengthAt, expectEqualResult)
 import Json.Decode as Decode
-import Json.Encode as Encode
 import JsonSchema exposing (..)
-import JsonSchema.Encoder exposing (encode, encodeValue)
 import JsonSchema.Decoder exposing (decoder)
+import JsonSchema.Encoder exposing (encode, encodeValue)
+import JsonSchema.Util exposing (hash)
 import Test exposing (..)
-import JsonSchema.Model as Model
 
 
 spec : Test
@@ -27,6 +26,7 @@ spec =
         , oneOfSpec
         , anyOfSpec
         , allOfSpec
+        , lazySchemaSpec
         , formatDateTime
         , formatEmail
         , formatHostname
@@ -615,6 +615,35 @@ allOfSpec =
                     encode allOfSchema
                         |> Decode.decodeString decoder
                         |> expectEqualResult allOfSchema
+            ]
+
+
+lazySchemaSpec : Test
+lazySchemaSpec =
+    let
+        schema : Schema
+        schema =
+            array
+                [ items <| lazy (\_ -> schema)
+                ]
+
+        key : String
+        key =
+            hash schema
+    in
+        describe "lazy"
+            [ test "is turned into a ref" <|
+                \() ->
+                    encode schema
+                        |> expectAt
+                            [ "items", "$ref" ]
+                            ( Decode.string, "#/definitions/" ++ key )
+            , test "is turned into a ref" <|
+                \() ->
+                    encode schema
+                        |> expectAt
+                            [ "definitions", key, "type" ]
+                            ( Decode.string, "array" )
             ]
 
 

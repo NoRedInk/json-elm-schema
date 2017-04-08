@@ -58,6 +58,9 @@ schemaValue schema =
         AllOf allOfSchema ->
             Debug.crash "Fuzzing an allOf schema is currently not supported"
 
+        Lazy thunk ->
+            Debug.crash "Fuzzing a lazy schema is currently not supported"
+
 
 objectFuzzer : ObjectSchema -> Fuzzer Value
 objectFuzzer objectSchema =

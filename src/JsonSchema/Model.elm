@@ -12,6 +12,7 @@ type Schema
     | OneOf BaseCombinatorSchema
     | AnyOf BaseCombinatorSchema
     | AllOf BaseCombinatorSchema
+    | Lazy (() -> Schema)
 
 
 type alias BaseSchema extras =
