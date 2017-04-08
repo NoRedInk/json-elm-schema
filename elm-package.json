@@ -10,7 +10,8 @@
         "JsonSchema",
         "JsonSchema.Fuzz",
         "JsonSchema.Encoder",
-        "JsonSchema.Decoder"
+        "JsonSchema.Decoder",
+        "JsonSchema.Validator"
     ],
     "dependencies": {
         "NoRedInk/elm-decode-pipeline": "3.0.0 <= v < 4.0.0",

@@ -1,18 +1,32 @@
-module JsonSchema.Validator exposing (validate, Error, RawError(..))
+module JsonSchema.Validator exposing (validate, Error, ErrorMessage(..))
+
+{-| Validating a JSON Schema.
+
+It does not yet validate the `format` keyword.
+
+@docs validate
+@docs Error, ErrorMessage
+
+-}
 
 import Array
 import JsonSchema.Model exposing (..)
 import Json.Decode exposing (..)
-import Json.Pointer exposing (Pointer)
+import Json.Pointer
 import Regex
 import Dict exposing (Dict)
 
 
+{-| The error type from a validation. It contains a JSON Pointer to where
+the validation error occured, and an error message
+-}
 type alias Error =
-    ( Pointer, RawError )
+    ( Json.Pointer.Pointer, ErrorMessage )
 
 
-type RawError
+{-| An error message from validation
+-}
+type ErrorMessage
     = IsShorterThan Int
     | IsLongerThan Int
     | DoesNotMatchPattern String
@@ -195,6 +209,13 @@ validateMaximum maximum number =
                 [ ( [], IsMoreThan maximum ) ]
 
 
+{-| Validate a JSON Value against a schema.
+
+If validation fails, a list of errors is returned, otherwise the list is empty.
+
+It does not yet validate the `format` keyword.
+
+-}
 validate : Schema -> Value -> List Error
 validate schema v =
     case schema of
