@@ -38,6 +38,13 @@ encodeSchemaProgram schema emit =
 -}
 encode : Schema -> String
 encode schema =
+    Encode.encode 2 (encodeValue schema)
+
+
+{-| Encode an elm json schema into a json value.
+-}
+encodeValue : Schema -> Encode.Value
+encodeValue schema =
     let
         cache : ThunkCache
         cache =
@@ -49,7 +56,7 @@ encode schema =
                 Nothing
             else
                 Dict.toList cache
-                    |> List.map (Tuple.mapSecond <| encodeValue cache)
+                    |> List.map (Tuple.mapSecond <| encodeSubSchema cache)
                     |> Encode.object
                     |> ((,) "definitions")
                     |> Just
@@ -59,13 +66,10 @@ encode schema =
             |> ((::) definitions)
             |> Maybe.Extra.values
             |> Encode.object
-            |> Encode.encode 2
 
 
-{-| Encode an elm json schema into a json value.
--}
-encodeValue : ThunkCache -> Schema -> Encode.Value
-encodeValue cache schema =
+encodeSubSchema : ThunkCache -> Schema -> Encode.Value
+encodeSubSchema cache schema =
     preEncodeValue cache schema
         |> Maybe.Extra.values
         |> Encode.object
@@ -86,7 +90,7 @@ preEncodeValue cache schema =
             [ Just ( "type", Encode.string "array" )
             , Maybe.map ((,) "title" << Encode.string) arraySchema.title
             , Maybe.map ((,) "description" << Encode.string) arraySchema.description
-            , Maybe.map ((,) "items" << encodeValue cache) arraySchema.items
+            , Maybe.map ((,) "items" << encodeSubSchema cache) arraySchema.items
             , Maybe.map ((,) "minItems" << Encode.int) arraySchema.minItems
             , Maybe.map ((,) "maxItems" << Encode.int) arraySchema.maxItems
             ]
@@ -135,7 +139,7 @@ preEncodeValue cache schema =
         OneOf oneOfSchema ->
             [ Maybe.map ((,) "title" << Encode.string) oneOfSchema.title
             , Maybe.map ((,) "description" << Encode.string) oneOfSchema.description
-            , List.map (encodeValue cache) oneOfSchema.subSchemas
+            , List.map (encodeSubSchema cache) oneOfSchema.subSchemas
                 |> Encode.list
                 |> (,) "oneOf"
                 |> Just
@@ -144,7 +148,7 @@ preEncodeValue cache schema =
         AnyOf anyOfSchema ->
             [ Maybe.map ((,) "title" << Encode.string) anyOfSchema.title
             , Maybe.map ((,) "description" << Encode.string) anyOfSchema.description
-            , List.map (encodeValue cache) anyOfSchema.subSchemas
+            , List.map (encodeSubSchema cache) anyOfSchema.subSchemas
                 |> Encode.list
                 |> (,) "anyOf"
                 |> Just
@@ -153,7 +157,7 @@ preEncodeValue cache schema =
         AllOf allOfSchema ->
             [ Maybe.map ((,) "title" << Encode.string) allOfSchema.title
             , Maybe.map ((,) "description" << Encode.string) allOfSchema.description
-            , List.map (encodeValue cache) allOfSchema.subSchemas
+            , List.map (encodeSubSchema cache) allOfSchema.subSchemas
                 |> Encode.list
                 |> (,) "allOf"
                 |> Just
@@ -241,10 +245,10 @@ convertProperty cache properties =
             (\property ->
                 case property of
                     Required name schema ->
-                        ( name, encodeValue cache schema )
+                        ( name, encodeSubSchema cache schema )
 
                     Optional name schema ->
-                        ( name, encodeValue cache schema )
+                        ( name, encodeSubSchema cache schema )
             )
         |> Encode.object
 
