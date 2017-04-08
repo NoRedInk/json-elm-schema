@@ -7,8 +7,8 @@ import Json.Encode as Encode
 import JsonSchema exposing (..)
 import JsonSchema.Encoder exposing (encode, encodeValue)
 import JsonSchema.Decoder exposing (decoder)
+import JsonSchema.Validator as Validator
 import Test exposing (..)
-import JsonSchema.Model as Model
 
 
 spec : Test
@@ -34,6 +34,7 @@ spec =
         , formatIpv6
         , formatUri
         , formatCustom
+        , deepValidation
         ]
 
 
@@ -97,6 +98,39 @@ objectSchemaSpec =
                     encode objectSchema
                         |> Decode.decodeString decoder
                         |> expectEqualResult objectSchema
+            , test "validate valid" <|
+                \() ->
+                    Encode.object [ ( "firstName", Encode.string "foo" ), ( "lastName", Encode.string "bar" ) ]
+                        |> Validator.validate objectSchema
+                        |> Expect.equal []
+            , test "validate valid optional field missing" <|
+                \() ->
+                    Encode.object [ ( "lastName", Encode.string "bar" ) ]
+                        |> Validator.validate objectSchema
+                        |> Expect.equal []
+            , test "validate valid additionalItems" <|
+                \() ->
+                    Encode.object [ ( "unknown", Encode.int 1 ), ( "firstName", Encode.string "foo" ), ( "lastName", Encode.string "bar" ) ]
+                        |> Validator.validate objectSchema
+                        |> Expect.equal []
+            , test "validate optional field wrong type" <|
+                \() ->
+                    Encode.object [ ( "firstName", Encode.int 1 ), ( "lastName", Encode.string "bar" ) ]
+                        |> Validator.validate objectSchema
+                        |> Expect.equal [ ( [ "firstName" ], Validator.DecodeError "Expecting a String but instead got: 1" ) ]
+            , test "validate required field missing" <|
+                \() ->
+                    Encode.object [ ( "firstName", Encode.string "bar" ) ]
+                        |> Validator.validate objectSchema
+                        |> Expect.equal [ ( [], Validator.RequiredPropertyMissing "lastName" ) ]
+            , test "validate multiple errors" <|
+                \() ->
+                    Encode.object [ ( "firstName", Encode.int 1 ) ]
+                        |> Validator.validate objectSchema
+                        |> Expect.equal
+                            [ ( [ "firstName" ], Validator.DecodeError "Expecting a String but instead got: 1" )
+                            , ( [], Validator.RequiredPropertyMissing "lastName" )
+                            ]
             ]
 
 
@@ -155,6 +189,58 @@ arraySchemaSpec =
                     encode arraySchema
                         |> Decode.decodeString decoder
                         |> expectEqualResult arraySchema
+            , test "validate valid" <|
+                \() ->
+                    Encode.list [ Encode.string "foo", Encode.string "bar", Encode.string "baz" ]
+                        |> Validator.validate arraySchema
+                        |> Expect.equal []
+            , test "validate too short" <|
+                \() ->
+                    Encode.list [ Encode.string "foo", Encode.string "bar" ]
+                        |> Validator.validate arraySchema
+                        |> Expect.equal [ ( [], Validator.HasFewerItemsThan 3 ) ]
+            , test "validate too long" <|
+                \() ->
+                    Encode.list
+                        [ Encode.string "foo"
+                        , Encode.string "bar"
+                        , Encode.string "baz"
+                        , Encode.string "foo"
+                        , Encode.string "bar"
+                        , Encode.string "baz"
+                        , Encode.string "foo"
+                        ]
+                        |> Validator.validate arraySchema
+                        |> Expect.equal [ ( [], Validator.HasMoreItemsThan 6 ) ]
+            , test "validate wrong item type" <|
+                \() ->
+                    Encode.list
+                        [ Encode.string "foo"
+                        , Encode.string "bar"
+                        , Encode.string "baz"
+                        , Encode.int 1
+                        , Encode.string "bar"
+                        , Encode.string "baz"
+                        ]
+                        |> Validator.validate arraySchema
+                        |> Expect.equal
+                            [ ( [ "3" ]
+                              , Validator.DecodeError "Expecting a String but instead got: 1"
+                              )
+                            ]
+            , test "validate multiple errors" <|
+                \() ->
+                    Encode.list
+                        [ Encode.string "foo"
+                        , Encode.int 1
+                        ]
+                        |> Validator.validate arraySchema
+                        |> Expect.equal
+                            [ ( [ "1" ]
+                              , Validator.DecodeError "Expecting a String but instead got: 1"
+                              )
+                            , ( [], Validator.HasFewerItemsThan 3 )
+                            ]
             ]
 
 
@@ -168,7 +254,7 @@ stringSchemaSpec =
                 , description "string schema description"
                 , minLength 2
                 , maxLength 8
-                , pattern "^foo$"
+                , pattern "f"
                 , format dateTime
                 ]
     in
@@ -208,7 +294,7 @@ stringSchemaSpec =
                     encode stringSchema
                         |> expectAt
                             [ "pattern" ]
-                            ( Decode.string, "^foo$" )
+                            ( Decode.string, "f" )
             , test "format property is set" <|
                 \() ->
                     encode stringSchema
@@ -220,6 +306,31 @@ stringSchemaSpec =
                     encode stringSchema
                         |> Decode.decodeString decoder
                         |> expectEqualResult stringSchema
+            , test "validate valid" <|
+                \() ->
+                    Encode.string "foo"
+                        |> Validator.validate stringSchema
+                        |> Expect.equal []
+            , test "validate wrong pattern" <|
+                \() ->
+                    Encode.string "goo"
+                        |> Validator.validate stringSchema
+                        |> Expect.equal [ ( [], Validator.DoesNotMatchPattern "f" ) ]
+            , test "validate too short" <|
+                \() ->
+                    Encode.string "f"
+                        |> Validator.validate stringSchema
+                        |> Expect.equal [ ( [], Validator.IsShorterThan 2 ) ]
+            , test "validate too long" <|
+                \() ->
+                    Encode.string "foooooooo"
+                        |> Validator.validate stringSchema
+                        |> Expect.equal [ ( [], Validator.IsLongerThan 8 ) ]
+            , test "validate multiple errors" <|
+                \() ->
+                    Encode.string "goooooooo"
+                        |> Validator.validate stringSchema
+                        |> Expect.equal [ ( [], Validator.IsLongerThan 8 ), ( [], Validator.DoesNotMatchPattern "f" ) ]
             ]
 
 
@@ -251,6 +362,21 @@ stringEnumSchemaSpec =
                     encode stringEnumSchema
                         |> Decode.decodeString decoder
                         |> expectEqualResult stringEnumSchema
+            , test "validate valid 1" <|
+                \() ->
+                    Encode.string "a"
+                        |> Validator.validate stringEnumSchema
+                        |> Expect.equal []
+            , test "validate valid 2" <|
+                \() ->
+                    Encode.string "b"
+                        |> Validator.validate stringEnumSchema
+                        |> Expect.equal []
+            , test "validate invalid" <|
+                \() ->
+                    Encode.string "c"
+                        |> Validator.validate stringEnumSchema
+                        |> Expect.equal [ ( [], Validator.NotInEnumeration ) ]
             ]
 
 
@@ -282,6 +408,21 @@ integerEnumSchemaSpec =
                     encode integerEnumSchema
                         |> Decode.decodeString decoder
                         |> expectEqualResult integerEnumSchema
+            , test "validate valid 1" <|
+                \() ->
+                    Encode.int 1
+                        |> Validator.validate integerEnumSchema
+                        |> Expect.equal []
+            , test "validate valid 2" <|
+                \() ->
+                    Encode.int 2
+                        |> Validator.validate integerEnumSchema
+                        |> Expect.equal []
+            , test "validate invalid" <|
+                \() ->
+                    Encode.int 3
+                        |> Validator.validate integerEnumSchema
+                        |> Expect.equal [ ( [], Validator.NotInEnumeration ) ]
             ]
 
 
@@ -333,6 +474,21 @@ integerSchemaSpec =
                     encode integerSchema
                         |> Decode.decodeString decoder
                         |> expectEqualResult integerSchema
+            , test "validate valid" <|
+                \() ->
+                    Encode.int 4
+                        |> Validator.validate integerSchema
+                        |> Expect.equal []
+            , test "validate too small" <|
+                \() ->
+                    Encode.int 1
+                        |> Validator.validate integerSchema
+                        |> Expect.equal [ ( [], Validator.IsLessThan 2 ) ]
+            , test "validate too large" <|
+                \() ->
+                    Encode.int 9
+                        |> Validator.validate integerSchema
+                        |> Expect.equal [ ( [], Validator.IsMoreThan 8 ) ]
             ]
 
 
@@ -384,6 +540,21 @@ numberSchemaSpec =
                     encode numberSchema
                         |> Decode.decodeString decoder
                         |> expectEqualResult numberSchema
+            , test "validate valid" <|
+                \() ->
+                    Encode.float 4
+                        |> Validator.validate numberSchema
+                        |> Expect.equal []
+            , test "validate too small" <|
+                \() ->
+                    Encode.float 2.4
+                        |> Validator.validate numberSchema
+                        |> Expect.equal [ ( [], Validator.IsLessThan 2.5 ) ]
+            , test "validate too large" <|
+                \() ->
+                    Encode.float 8.4
+                        |> Validator.validate numberSchema
+                        |> Expect.equal [ ( [], Validator.IsMoreThan 8.3 ) ]
             ]
 
 
@@ -415,6 +586,21 @@ numberEnumSchemaSpec =
                     encode numberEnumSchema
                         |> Decode.decodeString decoder
                         |> expectEqualResult numberEnumSchema
+            , test "validate valid 1" <|
+                \() ->
+                    Encode.float 1.2
+                        |> Validator.validate numberEnumSchema
+                        |> Expect.equal []
+            , test "validate valid 2" <|
+                \() ->
+                    Encode.float 3.4
+                        |> Validator.validate numberEnumSchema
+                        |> Expect.equal []
+            , test "validate invalid" <|
+                \() ->
+                    Encode.float 2.3
+                        |> Validator.validate numberEnumSchema
+                        |> Expect.equal [ ( [], Validator.NotInEnumeration ) ]
             ]
 
 
@@ -452,6 +638,16 @@ booleanSchemaSpec =
                     encode booleanSchema
                         |> Decode.decodeString decoder
                         |> expectEqualResult booleanSchema
+            , test "validate valid" <|
+                \() ->
+                    Encode.bool True
+                        |> Validator.validate booleanSchema
+                        |> Expect.equal []
+            , test "validate invalid type" <|
+                \() ->
+                    Encode.int 1
+                        |> Validator.validate booleanSchema
+                        |> Expect.equal [ ( [], Validator.DecodeError "Expecting a Bool but instead got: 1" ) ]
             ]
 
 
@@ -489,6 +685,16 @@ nullSchemaSpec =
                     encode nullSchema
                         |> Decode.decodeString decoder
                         |> expectEqualResult nullSchema
+            , test "validate valid" <|
+                \() ->
+                    Encode.null
+                        |> Validator.validate nullSchema
+                        |> Expect.equal []
+            , test "validate invalid type" <|
+                \() ->
+                    Encode.int 1
+                        |> Validator.validate nullSchema
+                        |> Expect.equal [ ( [], Validator.DecodeError "Expecting null but instead got: 1" ) ]
             ]
 
 
@@ -500,7 +706,7 @@ oneOfSpec =
                 [ title "oneOf schema title"
                 , description "oneOf schema description"
                 ]
-                [ integer [], string [] ]
+                [ string [ pattern "a" ], string [ pattern "b" ] ]
     in
         describe "oneOf schema"
             [ test "title property is set" <|
@@ -521,7 +727,7 @@ oneOfSpec =
                         |> Expect.all
                             [ expectAt
                                 [ "oneOf", "0", "type" ]
-                                ( Decode.string, "integer" )
+                                ( Decode.string, "string" )
                             , expectAt
                                 [ "oneOf", "1", "type" ]
                                 ( Decode.string, "string" )
@@ -531,6 +737,26 @@ oneOfSpec =
                     encode oneOfSchema
                         |> Decode.decodeString decoder
                         |> expectEqualResult oneOfSchema
+            , test "validate valid 1" <|
+                \() ->
+                    Encode.string "a"
+                        |> Validator.validate oneOfSchema
+                        |> Expect.equal []
+            , test "validate valid 2" <|
+                \() ->
+                    Encode.string "b"
+                        |> Validator.validate oneOfSchema
+                        |> Expect.equal []
+            , test "validate no match" <|
+                \() ->
+                    Encode.string "c"
+                        |> Validator.validate oneOfSchema
+                        |> Expect.equal [ ( [], Validator.TooFewMatches ) ]
+            , test "validate too many" <|
+                \() ->
+                    Encode.string "ab"
+                        |> Validator.validate oneOfSchema
+                        |> Expect.equal [ ( [], Validator.TooManyMatches ) ]
             ]
 
 
@@ -542,7 +768,7 @@ anyOfSpec =
                 [ title "anyOf schema title"
                 , description "anyOf schema description"
                 ]
-                [ integer [], string [] ]
+                [ string [ pattern "a" ], string [ pattern "b" ] ]
     in
         describe "anyOf schema"
             [ test "title property is set" <|
@@ -563,7 +789,7 @@ anyOfSpec =
                         |> Expect.all
                             [ expectAt
                                 [ "anyOf", "0", "type" ]
-                                ( Decode.string, "integer" )
+                                ( Decode.string, "string" )
                             , expectAt
                                 [ "anyOf", "1", "type" ]
                                 ( Decode.string, "string" )
@@ -573,6 +799,26 @@ anyOfSpec =
                     encode anyOfSchema
                         |> Decode.decodeString decoder
                         |> expectEqualResult anyOfSchema
+            , test "validate valid 1" <|
+                \() ->
+                    Encode.string "a"
+                        |> Validator.validate anyOfSchema
+                        |> Expect.equal []
+            , test "validate valid 2" <|
+                \() ->
+                    Encode.string "b"
+                        |> Validator.validate anyOfSchema
+                        |> Expect.equal []
+            , test "validate valid 3" <|
+                \() ->
+                    Encode.string "ab"
+                        |> Validator.validate anyOfSchema
+                        |> Expect.equal []
+            , test "validate no match" <|
+                \() ->
+                    Encode.string "c"
+                        |> Validator.validate anyOfSchema
+                        |> Expect.equal [ ( [], Validator.TooFewMatches ) ]
             ]
 
 
@@ -584,7 +830,7 @@ allOfSpec =
                 [ title "allOf schema title"
                 , description "allOf schema description"
                 ]
-                [ integer [], string [] ]
+                [ string [ pattern "a" ], string [ pattern "b" ] ]
     in
         describe "allOf schema"
             [ test "title property is set" <|
@@ -605,7 +851,7 @@ allOfSpec =
                         |> Expect.all
                             [ expectAt
                                 [ "allOf", "0", "type" ]
-                                ( Decode.string, "integer" )
+                                ( Decode.string, "string" )
                             , expectAt
                                 [ "allOf", "1", "type" ]
                                 ( Decode.string, "string" )
@@ -615,6 +861,26 @@ allOfSpec =
                     encode allOfSchema
                         |> Decode.decodeString decoder
                         |> expectEqualResult allOfSchema
+            , test "validate valid" <|
+                \() ->
+                    Encode.string "ab"
+                        |> Validator.validate allOfSchema
+                        |> Expect.equal []
+            , test "validate invalid 1" <|
+                \() ->
+                    Encode.string "a"
+                        |> Validator.validate allOfSchema
+                        |> Expect.equal [ ( [], Validator.TooFewMatches ) ]
+            , test "validate invalid 2" <|
+                \() ->
+                    Encode.string "b"
+                        |> Validator.validate allOfSchema
+                        |> Expect.equal [ ( [], Validator.TooFewMatches ) ]
+            , test "validate invalid 3" <|
+                \() ->
+                    Encode.string "c"
+                        |> Validator.validate allOfSchema
+                        |> Expect.equal [ ( [], Validator.TooFewMatches ) ]
             ]
 
 
@@ -769,4 +1035,51 @@ formatCustom =
                     encode schema
                         |> Decode.decodeString decoder
                         |> expectEqualResult schema
+            ]
+
+
+deepValidation : Test
+deepValidation =
+    let
+        deepSchema =
+            object
+                [ properties
+                    [ required "field"
+                        (array
+                            [ items
+                                (string
+                                    [ pattern "a" ]
+                                )
+                            ]
+                        )
+                    ]
+                ]
+    in
+        describe "deep validation"
+            [ test "validate valid" <|
+                \() ->
+                    Encode.object
+                        [ ( "field"
+                          , Encode.list
+                                [ Encode.string "a" ]
+                          )
+                        ]
+                        |> Validator.validate deepSchema
+                        |> Expect.equal []
+            , test "validate invalid 1" <|
+                \() ->
+                    Encode.object
+                        [ ( "field"
+                          , Encode.list
+                                [ Encode.string "b" ]
+                          )
+                        ]
+                        |> Validator.validate deepSchema
+                        |> Expect.equal
+                            [ ( [ "field"
+                                , "0"
+                                ]
+                              , Validator.DoesNotMatchPattern "a"
+                              )
+                            ]
             ]
