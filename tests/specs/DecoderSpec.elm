@@ -3,11 +3,9 @@ module DecoderSpec exposing (spec)
 import Expect exposing (pass)
 import Fixtures
 import Json.Decode as Decode
-import Json.Encode as Encode
 import JsonSchema exposing (..)
 import JsonSchema.Decoder exposing (decoder)
 import JsonSchema.Encoder exposing (encode)
-import JsonSchema.Model
 import Test exposing (..)
 
 
@@ -25,10 +23,12 @@ spec =
             , Fixtures.numberEnumSchema
             , Fixtures.booleanSchema
             , Fixtures.nullSchema
+            , Fixtures.refSchema
             , Fixtures.oneOfSchema
             , Fixtures.anyOfSchema
             , Fixtures.allOfSchema
             , Fixtures.fallbackSchema
+            , Fixtures.lazySchema
             , string [ format dateTime ]
             , string [ format email ]
             , string [ format hostname ]
@@ -36,7 +36,6 @@ spec =
             , string [ format ipv6 ]
             , string [ format uri ]
             , string [ format (customFormat "foo") ]
-              -- , Fixtures.lazySchema
             ]
 
 

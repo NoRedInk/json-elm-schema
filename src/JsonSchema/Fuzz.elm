@@ -47,6 +47,9 @@ schemaValue schema =
         Null _ ->
             nullFuzzer
 
+        Ref _ ->
+            Debug.crash "Fuzzing a ref schema is not supported"
+
         AnyOf anyOfSchema ->
             anyOfFuzzer anyOfSchema
 

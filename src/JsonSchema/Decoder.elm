@@ -20,6 +20,7 @@ type PreSchema
     | Number PreNumberSchema
     | Boolean PreBaseSchema
     | Null PreBaseSchema
+    | Ref PreRefSchema
     | OneOf PreBaseCombinatorSchema
     | AnyOf PreBaseCombinatorSchema
     | AllOf PreBaseCombinatorSchema
@@ -78,6 +79,13 @@ type alias PreBaseSchema =
     }
 
 
+type alias PreRefSchema =
+    { title : Maybe String
+    , description : Maybe String
+    , ref : String
+    }
+
+
 type alias PreBaseCombinatorSchema =
     { title : Maybe String
     , description : Maybe String
@@ -93,7 +101,17 @@ type alias Definitions =
 -}
 decoder : Decoder Schema
 decoder =
-    map toSchema preSchemaDecoder
+    map2 toSchema definitionsDecoder preSchemaDecoder
+
+
+definitionsDecoder : Decoder Definitions
+definitionsDecoder =
+    field "definitions"
+        (keyValuePairs preSchemaDecoder
+            |> map (List.map (Tuple.mapFirst ((++) "#/definitions/")) >> Dict.fromList)
+        )
+        |> maybe
+        |> map (Maybe.withDefault Dict.empty)
 
 
 preSchemaDecoder : Decoder PreSchema
@@ -102,78 +120,79 @@ preSchemaDecoder =
         (\_ ->
             oneOf
                 [ decode PreObjectSchema
-                    |> maybe "title" string
-                    |> maybe "description" string
+                    |> maybeOptional "title" string
+                    |> maybeOptional "description" string
                     |> optional "properties" (dict preSchemaDecoder) Dict.empty
                     |> optional "required" (list string) []
                     |> withType "object"
                     |> map Object
                 , decode PreArraySchema
-                    |> maybe "title" string
-                    |> maybe "description" string
-                    |> maybe "items" preSchemaDecoder
-                    |> maybe "minItems" int
-                    |> maybe "maxItems" int
+                    |> maybeOptional "title" string
+                    |> maybeOptional "description" string
+                    |> maybeOptional "items" preSchemaDecoder
+                    |> maybeOptional "minItems" int
+                    |> maybeOptional "maxItems" int
                     |> withType "array"
                     |> map Array
                 , decode PreStringSchema
-                    |> maybe "title" string
-                    |> maybe "description" string
-                    |> maybe "minLength" int
-                    |> maybe "maxLength" int
-                    |> maybe "pattern" string
-                    |> maybe "format" string
-                    |> maybe "enum" (list string)
+                    |> maybeOptional "title" string
+                    |> maybeOptional "description" string
+                    |> maybeOptional "minLength" int
+                    |> maybeOptional "maxLength" int
+                    |> maybeOptional "pattern" string
+                    |> maybeOptional "format" string
+                    |> maybeOptional "enum" (list string)
                     |> withType "string"
                     |> map String
                 , decode PreIntegerSchema
-                    |> maybe "title" string
-                    |> maybe "description" string
-                    |> maybe "minimum" int
-                    |> maybe "maximum" int
-                    |> maybe "enum" (list int)
+                    |> maybeOptional "title" string
+                    |> maybeOptional "description" string
+                    |> maybeOptional "minimum" int
+                    |> maybeOptional "maximum" int
+                    |> maybeOptional "enum" (list int)
                     |> withType "integer"
                     |> map Integer
                 , decode PreNumberSchema
-                    |> maybe "title" string
-                    |> maybe "description" string
-                    |> maybe "minimum" float
-                    |> maybe "maximum" float
-                    |> maybe "enum" (list float)
+                    |> maybeOptional "title" string
+                    |> maybeOptional "description" string
+                    |> maybeOptional "minimum" float
+                    |> maybeOptional "maximum" float
+                    |> maybeOptional "enum" (list float)
                     |> withType "number"
                     |> map Number
                 , decode PreBaseSchema
-                    |> maybe "title" string
-                    |> maybe "description" string
+                    |> maybeOptional "title" string
+                    |> maybeOptional "description" string
                     |> withType "boolean"
                     |> map Boolean
                 , decode PreBaseSchema
-                    |> maybe "title" string
-                    |> maybe "description" string
+                    |> maybeOptional "title" string
+                    |> maybeOptional "description" string
                     |> withType "null"
                     |> map Null
+                , decode PreRefSchema
+                    |> maybeOptional "title" string
+                    |> maybeOptional "description" string
+                    |> required "$ref" string
+                    |> map Ref
                 , decode PreBaseCombinatorSchema
-                    |> maybe "title" string
-                    |> maybe "description" string
+                    |> maybeOptional "title" string
+                    |> maybeOptional "description" string
                     |> required "oneOf" (list preSchemaDecoder)
                     |> map OneOf
                 , decode PreBaseCombinatorSchema
-                    |> maybe "title" string
-                    |> maybe "description" string
+                    |> maybeOptional "title" string
+                    |> maybeOptional "description" string
                     |> required "anyOf" (list preSchemaDecoder)
                     |> map AnyOf
                 , decode PreBaseCombinatorSchema
-                    |> maybe "title" string
-                    |> maybe "description" string
+                    |> maybeOptional "title" string
+                    |> maybeOptional "description" string
                     |> required "allOf" (list preSchemaDecoder)
                     |> map AllOf
                 , map Fallback value
                 ]
         )
-
-
-
--- HELPERS --
 
 
 {-| Ensure a decoder has a specific "type" value.
@@ -198,17 +217,13 @@ constant expectedValue decoder =
             )
 
 
-maybe : String -> Decoder a -> Decoder (Maybe a -> b) -> Decoder b
-maybe key decoder =
+maybeOptional : String -> Decoder a -> Decoder (Maybe a -> b) -> Decoder b
+maybeOptional key decoder =
     optional key (nullable decoder) Nothing
 
 
-
--- CONSTRUCTORS --
-
-
-toSchema : PreSchema -> Schema
-toSchema preSchema =
+toSchema : Definitions -> PreSchema -> Schema
+toSchema definitions preSchema =
     case preSchema of
         Object { title, description, required, properties } ->
             let
@@ -216,7 +231,7 @@ toSchema preSchema =
                     Set.fromList required
 
                 objectProperty ( key, preSchema ) =
-                    toSchema preSchema
+                    toSchema definitions preSchema
                         |> if Set.member key requiredSet then
                             Model.Required key
                            else
@@ -234,7 +249,7 @@ toSchema preSchema =
 
         Array content ->
             Model.Array
-                { content | items = Maybe.map toSchema content.items }
+                { content | items = Maybe.map (toSchema definitions) content.items }
 
         String content ->
             Model.String
@@ -255,13 +270,18 @@ toSchema preSchema =
             Model.Null content
 
         OneOf content ->
-            Model.OneOf { content | subSchemas = List.map toSchema content.subSchemas }
+            Model.OneOf { content | subSchemas = List.map (toSchema definitions) content.subSchemas }
 
         AnyOf content ->
-            Model.AnyOf { content | subSchemas = List.map toSchema content.subSchemas }
+            Model.AnyOf { content | subSchemas = List.map (toSchema definitions) content.subSchemas }
 
         AllOf content ->
-            Model.AllOf { content | subSchemas = List.map toSchema content.subSchemas }
+            Model.AllOf { content | subSchemas = List.map (toSchema definitions) content.subSchemas }
+
+        Ref content ->
+            Dict.get content.ref definitions
+                |> Maybe.map (\preSchema -> Model.Lazy (\_ -> toSchema definitions preSchema))
+                |> Maybe.withDefault (Model.Ref content)
 
         Fallback value ->
             Model.Fallback value

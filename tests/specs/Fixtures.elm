@@ -100,6 +100,15 @@ nullSchema =
         ]
 
 
+refSchema : Schema
+refSchema =
+    JsonSchema.Model.Ref
+        { title = Just "ref schema title"
+        , description = Just "ref schema description"
+        , ref = "refurl"
+        }
+
+
 oneOfSchema : Schema
 oneOfSchema =
     oneOf

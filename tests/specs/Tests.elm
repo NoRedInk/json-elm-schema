@@ -23,6 +23,7 @@ spec =
         , numberEnumSchemaSpec
         , booleanSchemaSpec
         , nullSchemaSpec
+        , refSchemaSpec
         , oneOfSpec
         , anyOfSpec
         , allOfSpec
@@ -345,6 +346,30 @@ nullSchemaSpec =
                     |> expectAt
                         [ "type" ]
                         ( Decode.string, "null" )
+        ]
+
+
+refSchemaSpec : Test
+refSchemaSpec =
+    describe "null schema"
+        [ test "title property is set" <|
+            \() ->
+                encode refSchema
+                    |> expectAt
+                        [ "title" ]
+                        ( Decode.string, "ref schema title" )
+        , test "description property is set" <|
+            \() ->
+                encode refSchema
+                    |> expectAt
+                        [ "description" ]
+                        ( Decode.string, "ref schema description" )
+        , test "has a ref" <|
+            \() ->
+                encode refSchema
+                    |> expectAt
+                        [ "$ref" ]
+                        ( Decode.string, "refurl" )
         ]
 
 

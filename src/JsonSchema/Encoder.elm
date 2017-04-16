@@ -136,6 +136,14 @@ encodeSubSchema cache schema =
                 |> Maybe.Extra.values
                 |> Encode.object
 
+        Ref refSchema ->
+            [ Just ( "$ref", Encode.string refSchema.ref )
+            , Maybe.map ((,) "title" << Encode.string) refSchema.title
+            , Maybe.map ((,) "description" << Encode.string) refSchema.description
+            ]
+                |> Maybe.Extra.values
+                |> Encode.object
+
         Null nullSchema ->
             [ Just ( "type", Encode.string "null" )
             , Maybe.map ((,) "title" << Encode.string) nullSchema.title
@@ -212,6 +220,9 @@ findThunks schema cache =
             cache
 
         Null _ ->
+            cache
+
+        Ref _ ->
             cache
 
         OneOf { subSchemas } ->
