@@ -74,6 +74,7 @@ decoder =
                     |> required "allOf" (list decoder)
                     |> optionalMaybe "title" string
                     |> optionalMaybe "description" string
+                , map Fallback value
                 ]
         )
 

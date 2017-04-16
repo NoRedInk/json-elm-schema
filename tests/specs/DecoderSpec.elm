@@ -3,9 +3,11 @@ module DecoderSpec exposing (spec)
 import Expect exposing (pass)
 import Fixtures
 import Json.Decode as Decode
+import Json.Encode as Encode
 import JsonSchema exposing (..)
 import JsonSchema.Decoder exposing (decoder)
 import JsonSchema.Encoder exposing (encode)
+import JsonSchema.Model
 import Test exposing (..)
 
 
@@ -33,6 +35,7 @@ spec =
             , string [ format ipv6 ]
             , string [ format uri ]
             , string [ format (customFormat "foo") ]
+            , JsonSchema.Model.Fallback (Encode.object [ ( "foo", Encode.string "bar" ) ])
               -- , Fixtures.lazySchema
             ]
 
