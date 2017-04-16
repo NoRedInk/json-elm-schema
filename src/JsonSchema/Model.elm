@@ -1,5 +1,7 @@
 module JsonSchema.Model exposing (..)
 
+import Json.Decode
+
 
 type Schema
     = Object ObjectSchema
@@ -13,6 +15,7 @@ type Schema
     | AnyOf BaseCombinatorSchema
     | AllOf BaseCombinatorSchema
     | Lazy (() -> Schema)
+    | Fallback Json.Decode.Value
 
 
 type alias BaseSchema extras =

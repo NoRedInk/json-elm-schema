@@ -7,6 +7,7 @@ module JsonSchema.Encoder exposing (encode, encodeValue, EncoderProgram, encodeS
 
 import Dict exposing (Dict)
 import Json.Encode as Encode
+import Json.Decode as Decode
 import JsonSchema.Model exposing (..)
 import JsonSchema.Util exposing (hash)
 import Maybe.Extra
@@ -50,33 +51,26 @@ encodeValue schema =
         cache =
             findThunks schema Dict.empty
 
-        definitions : Maybe ( String, Encode.Value )
+        definitions : Encode.Value
         definitions =
+            Dict.toList cache
+                |> List.map (Tuple.mapSecond <| encodeSubSchema cache)
+                |> Encode.object
+
+        addDefinitions : Encode.Value -> Encode.Value
+        addDefinitions schemaValue =
             if Dict.isEmpty cache then
-                Nothing
+                schemaValue
             else
-                Dict.toList cache
-                    |> List.map (Tuple.mapSecond <| encodeSubSchema cache)
-                    |> Encode.object
-                    |> ((,) "definitions")
-                    |> Just
+                set "definitions" definitions schemaValue
     in
         schema
-            |> preEncodeValue cache
-            |> ((::) definitions)
-            |> Maybe.Extra.values
-            |> Encode.object
+            |> encodeSubSchema cache
+            |> addDefinitions
 
 
 encodeSubSchema : ThunkCache -> Schema -> Encode.Value
 encodeSubSchema cache schema =
-    preEncodeValue cache schema
-        |> Maybe.Extra.values
-        |> Encode.object
-
-
-preEncodeValue : ThunkCache -> Schema -> List (Maybe ( String, Encode.Value ))
-preEncodeValue cache schema =
     case schema of
         Object objectSchema ->
             [ Just ( "type", Encode.string "object" )
@@ -85,6 +79,8 @@ preEncodeValue cache schema =
             , Just ( "properties", (convertProperty cache objectSchema.properties) )
             , Just ( "required", (findRequiredFields objectSchema.properties) )
             ]
+                |> Maybe.Extra.values
+                |> Encode.object
 
         Array arraySchema ->
             [ Just ( "type", Encode.string "array" )
@@ -94,6 +90,8 @@ preEncodeValue cache schema =
             , Maybe.map ((,) "minItems" << Encode.int) arraySchema.minItems
             , Maybe.map ((,) "maxItems" << Encode.int) arraySchema.maxItems
             ]
+                |> Maybe.Extra.values
+                |> Encode.object
 
         String stringSchema ->
             [ Just ( "type", Encode.string "string" )
@@ -105,6 +103,8 @@ preEncodeValue cache schema =
             , Maybe.map ((,) "pattern" << Encode.string) stringSchema.pattern
             , Maybe.map ((,) "format" << Encode.string << printFormat) stringSchema.format
             ]
+                |> Maybe.Extra.values
+                |> Encode.object
 
         Integer integerSchema ->
             [ Just ( "type", Encode.string "integer" )
@@ -114,6 +114,8 @@ preEncodeValue cache schema =
             , Maybe.map ((,) "minimum" << Encode.int) integerSchema.minimum
             , Maybe.map ((,) "maximum" << Encode.int) integerSchema.maximum
             ]
+                |> Maybe.Extra.values
+                |> Encode.object
 
         Number numberSchema ->
             [ Just ( "type", Encode.string "number" )
@@ -123,18 +125,24 @@ preEncodeValue cache schema =
             , Maybe.map ((,) "minimum" << Encode.float) numberSchema.minimum
             , Maybe.map ((,) "maximum" << Encode.float) numberSchema.maximum
             ]
+                |> Maybe.Extra.values
+                |> Encode.object
 
         Boolean booleanSchema ->
             [ Just ( "type", Encode.string "boolean" )
             , Maybe.map ((,) "title" << Encode.string) booleanSchema.title
             , Maybe.map ((,) "description" << Encode.string) booleanSchema.description
             ]
+                |> Maybe.Extra.values
+                |> Encode.object
 
         Null nullSchema ->
             [ Just ( "type", Encode.string "null" )
             , Maybe.map ((,) "title" << Encode.string) nullSchema.title
             , Maybe.map ((,) "description" << Encode.string) nullSchema.description
             ]
+                |> Maybe.Extra.values
+                |> Encode.object
 
         OneOf oneOfSchema ->
             [ Maybe.map ((,) "title" << Encode.string) oneOfSchema.title
@@ -144,6 +152,8 @@ preEncodeValue cache schema =
                 |> (,) "oneOf"
                 |> Just
             ]
+                |> Maybe.Extra.values
+                |> Encode.object
 
         AnyOf anyOfSchema ->
             [ Maybe.map ((,) "title" << Encode.string) anyOfSchema.title
@@ -153,6 +163,8 @@ preEncodeValue cache schema =
                 |> (,) "anyOf"
                 |> Just
             ]
+                |> Maybe.Extra.values
+                |> Encode.object
 
         AllOf allOfSchema ->
             [ Maybe.map ((,) "title" << Encode.string) allOfSchema.title
@@ -162,9 +174,15 @@ preEncodeValue cache schema =
                 |> (,) "allOf"
                 |> Just
             ]
+                |> Maybe.Extra.values
+                |> Encode.object
 
         Lazy thunk ->
-            [ Just ( "$ref", Encode.string <| "#/definitions/" ++ (hash <| thunk ()) ) ]
+            [ ( "$ref", Encode.string <| "#/definitions/" ++ (hash <| thunk ()) ) ]
+                |> Encode.object
+
+        Fallback value ->
+            value
 
 
 type alias ThunkCache =
@@ -207,6 +225,9 @@ findThunks schema cache =
 
         Lazy thunk ->
             thunkDict thunk cache
+
+        Fallback _ ->
+            cache
 
 
 getPropertySchema : ObjectProperty -> Schema
@@ -293,3 +314,14 @@ printFormat format =
 
         Custom customFormat ->
             customFormat
+
+
+{-| Try to set a key value pair on a JSON object.
+If the passed in JSON value is not an object, return it unchanged.
+-}
+set : String -> Encode.Value -> Encode.Value -> Encode.Value
+set key value jsonObj =
+    Decode.decodeValue (Decode.keyValuePairs Decode.value) jsonObj
+        |> Result.map ((::) ( key, value ))
+        |> Result.map Encode.object
+        |> Result.withDefault jsonObj

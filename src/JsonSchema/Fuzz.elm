@@ -61,6 +61,9 @@ schemaValue schema =
         Lazy thunk ->
             Debug.crash "Fuzzing a lazy schema is currently not supported"
 
+        Fallback value ->
+            Debug.crash "Fuzzing a fallback schema is not supported"
+
 
 objectFuzzer : ObjectSchema -> Fuzzer Value
 objectFuzzer objectSchema =
