@@ -1,6 +1,8 @@
 module Fixtures exposing (..)
 
+import Json.Encode as Encode
 import JsonSchema exposing (..)
+import JsonSchema.Model
 
 
 objectSchema : Schema
@@ -130,3 +132,11 @@ lazySchema =
     array
         [ items <| lazy (\_ -> lazySchema)
         ]
+
+
+fallbackSchema : Schema
+fallbackSchema =
+    JsonSchema.Model.Fallback
+        (Encode.object
+            [ ( "foo", Encode.string "bar" ) ]
+        )

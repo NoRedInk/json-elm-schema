@@ -28,6 +28,7 @@ spec =
             , Fixtures.oneOfSchema
             , Fixtures.anyOfSchema
             , Fixtures.allOfSchema
+            , Fixtures.fallbackSchema
             , string [ format dateTime ]
             , string [ format email ]
             , string [ format hostname ]
@@ -35,7 +36,6 @@ spec =
             , string [ format ipv6 ]
             , string [ format uri ]
             , string [ format (customFormat "foo") ]
-            , JsonSchema.Model.Fallback (Encode.object [ ( "foo", Encode.string "bar" ) ])
               -- , Fixtures.lazySchema
             ]
 

@@ -34,6 +34,7 @@ spec =
         , formatIpv6
         , formatUri
         , formatCustom
+        , fallbackSchemaSpec
         ]
 
 
@@ -574,3 +575,15 @@ formatCustom =
                             [ "format" ]
                             ( Decode.string, "foo" )
             ]
+
+
+fallbackSchemaSpec : Test
+fallbackSchemaSpec =
+    describe "fallback schema"
+        [ test "fallback value is re-encoded" <|
+            \() ->
+                encode fallbackSchema
+                    |> expectAt
+                        [ "foo" ]
+                        ( Decode.string, "bar" )
+        ]
