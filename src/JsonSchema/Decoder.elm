@@ -5,75 +5,168 @@ module JsonSchema.Decoder exposing (decoder)
 @docs decoder
 -}
 
-import JsonSchema.Model exposing (..)
+import JsonSchema.Model as Model exposing (Schema)
 import Json.Decode exposing (..)
 import Json.Decode.Pipeline exposing (..)
+import Dict exposing (Dict)
 import Set
+
+
+type PreSchema
+    = Object PreObjectSchema
+    | Array PreArraySchema
+    | String PreStringSchema
+    | Integer PreIntegerSchema
+    | Number PreNumberSchema
+    | Boolean PreBaseSchema
+    | Null PreBaseSchema
+    | OneOf PreBaseCombinatorSchema
+    | AnyOf PreBaseCombinatorSchema
+    | AllOf PreBaseCombinatorSchema
+    | Fallback Value
+
+
+type alias PreObjectSchema =
+    { title : Maybe String
+    , description : Maybe String
+    , properties : Dict String PreSchema
+    , required : List String
+    }
+
+
+type alias PreArraySchema =
+    { title : Maybe String
+    , description : Maybe String
+    , items : Maybe PreSchema
+    , minItems : Maybe Int
+    , maxItems : Maybe Int
+    }
+
+
+type alias PreStringSchema =
+    { title : Maybe String
+    , description : Maybe String
+    , minLength : Maybe Int
+    , maxLength : Maybe Int
+    , pattern : Maybe String
+    , format : Maybe String
+    , enum : Maybe (List String)
+    }
+
+
+type alias PreIntegerSchema =
+    { title : Maybe String
+    , description : Maybe String
+    , minimum : Maybe Int
+    , maximum : Maybe Int
+    , enum : Maybe (List Int)
+    }
+
+
+type alias PreNumberSchema =
+    { title : Maybe String
+    , description : Maybe String
+    , minimum : Maybe Float
+    , maximum : Maybe Float
+    , enum : Maybe (List Float)
+    }
+
+
+type alias PreBaseSchema =
+    { title : Maybe String
+    , description : Maybe String
+    }
+
+
+type alias PreBaseCombinatorSchema =
+    { title : Maybe String
+    , description : Maybe String
+    , subSchemas : List PreSchema
+    }
+
+
+type alias Definitions =
+    Dict String PreSchema
 
 
 {-| Decoder for a JSON Schema
 -}
 decoder : Decoder Schema
 decoder =
+    map toSchema preSchemaDecoder
+
+
+preSchemaDecoder : Decoder PreSchema
+preSchemaDecoder =
     lazy
         (\_ ->
             oneOf
-                [ decode objectSchema
-                    |> optional "properties" (keyValuePairs decoder) []
+                [ decode PreObjectSchema
+                    |> maybe "title" string
+                    |> maybe "description" string
+                    |> optional "properties" (dict preSchemaDecoder) Dict.empty
                     |> optional "required" (list string) []
-                    |> optionalMaybe "title" string
-                    |> optionalMaybe "description" string
                     |> withType "object"
-                , decode arraySchema
-                    |> optionalMaybe "items" decoder
-                    |> optionalMaybe "minItems" int
-                    |> optionalMaybe "maxItems" int
-                    |> optionalMaybe "title" string
-                    |> optionalMaybe "description" string
+                    |> map Object
+                , decode PreArraySchema
+                    |> maybe "title" string
+                    |> maybe "description" string
+                    |> maybe "items" preSchemaDecoder
+                    |> maybe "minItems" int
+                    |> maybe "maxItems" int
                     |> withType "array"
-                , decode stringSchema
-                    |> optionalMaybe "minLength" int
-                    |> optionalMaybe "maxLength" int
-                    |> optionalMaybe "pattern" string
-                    |> optionalMaybe "format" string
-                    |> optionalMaybe "enum" (list string)
-                    |> optionalMaybe "title" string
-                    |> optionalMaybe "description" string
+                    |> map Array
+                , decode PreStringSchema
+                    |> maybe "title" string
+                    |> maybe "description" string
+                    |> maybe "minLength" int
+                    |> maybe "maxLength" int
+                    |> maybe "pattern" string
+                    |> maybe "format" string
+                    |> maybe "enum" (list string)
                     |> withType "string"
-                , decode integerSchema
-                    |> optionalMaybe "minimum" int
-                    |> optionalMaybe "maximum" int
-                    |> optionalMaybe "enum" (list int)
-                    |> optionalMaybe "title" string
-                    |> optionalMaybe "description" string
+                    |> map String
+                , decode PreIntegerSchema
+                    |> maybe "title" string
+                    |> maybe "description" string
+                    |> maybe "minimum" int
+                    |> maybe "maximum" int
+                    |> maybe "enum" (list int)
                     |> withType "integer"
-                , decode numberSchema
-                    |> optionalMaybe "minimum" float
-                    |> optionalMaybe "maximum" float
-                    |> optionalMaybe "enum" (list float)
-                    |> optionalMaybe "title" string
-                    |> optionalMaybe "description" string
+                    |> map Integer
+                , decode PreNumberSchema
+                    |> maybe "title" string
+                    |> maybe "description" string
+                    |> maybe "minimum" float
+                    |> maybe "maximum" float
+                    |> maybe "enum" (list float)
                     |> withType "number"
-                , decode booleanSchema
-                    |> optionalMaybe "title" string
-                    |> optionalMaybe "description" string
+                    |> map Number
+                , decode PreBaseSchema
+                    |> maybe "title" string
+                    |> maybe "description" string
                     |> withType "boolean"
-                , decode nullSchema
-                    |> optionalMaybe "title" string
-                    |> optionalMaybe "description" string
+                    |> map Boolean
+                , decode PreBaseSchema
+                    |> maybe "title" string
+                    |> maybe "description" string
                     |> withType "null"
-                , decode oneOfSchema
-                    |> required "oneOf" (list decoder)
-                    |> optionalMaybe "title" string
-                    |> optionalMaybe "description" string
-                , decode anyOfSchema
-                    |> required "anyOf" (list decoder)
-                    |> optionalMaybe "title" string
-                    |> optionalMaybe "description" string
-                , decode allOfSchema
-                    |> required "allOf" (list decoder)
-                    |> optionalMaybe "title" string
-                    |> optionalMaybe "description" string
+                    |> map Null
+                , decode PreBaseCombinatorSchema
+                    |> maybe "title" string
+                    |> maybe "description" string
+                    |> required "oneOf" (list preSchemaDecoder)
+                    |> map OneOf
+                , decode PreBaseCombinatorSchema
+                    |> maybe "title" string
+                    |> maybe "description" string
+                    |> required "anyOf" (list preSchemaDecoder)
+                    |> map AnyOf
+                , decode PreBaseCombinatorSchema
+                    |> maybe "title" string
+                    |> maybe "description" string
+                    |> required "allOf" (list preSchemaDecoder)
+                    |> map AllOf
                 , map Fallback value
                 ]
         )
@@ -85,7 +178,7 @@ decoder =
 
 {-| Ensure a decoder has a specific "type" value.
 -}
-withType : String -> Decoder Schema -> Decoder Schema
+withType : String -> Decoder a -> Decoder a
 withType typeString decoder =
     field "type" (constant typeString string)
         |> andThen (always decoder)
@@ -105,135 +198,95 @@ constant expectedValue decoder =
             )
 
 
-optionalMaybe n d =
-    optional n (nullable d) Nothing
+maybe : String -> Decoder a -> Decoder (Maybe a -> b) -> Decoder b
+maybe key decoder =
+    optional key (nullable decoder) Nothing
 
 
 
 -- CONSTRUCTORS --
 
 
-objectSchema propertiesPairs requiredList title description =
-    let
-        requiredSet =
-            Set.fromList requiredList
+toSchema : PreSchema -> Schema
+toSchema preSchema =
+    case preSchema of
+        Object { title, description, required, properties } ->
+            let
+                requiredSet =
+                    Set.fromList required
 
-        objectProperty ( key, schema ) =
-            if Set.member key requiredSet then
-                Required key schema
-            else
-                Optional key schema
+                objectProperty ( key, preSchema ) =
+                    toSchema preSchema
+                        |> if Set.member key requiredSet then
+                            Model.Required key
+                           else
+                            Model.Optional key
 
-        properties =
-            -- keyValuePairs give keys in reverse order
-            List.map objectProperty (List.reverse propertiesPairs)
-    in
-        Object
-            { properties = properties
-            , title = title
-            , description = description
-            }
+                schemaProperties =
+                    Dict.toList properties
+                        |> List.map objectProperty
+            in
+                Model.Object
+                    { properties = schemaProperties
+                    , title = title
+                    , description = description
+                    }
 
+        Array content ->
+            Model.Array
+                { content | items = Maybe.map toSchema content.items }
 
-arraySchema items minItems maxItems title description =
-    Array
-        { items = items
-        , minItems = minItems
-        , maxItems = maxItems
-        , title = title
-        , description = description
-        }
+        String content ->
+            Model.String
+                { content
+                    | format = Maybe.map stringFormat content.format
+                }
 
+        Integer content ->
+            Model.Integer content
 
-stringSchema minLength maxLength pattern format enum title description =
-    String
-        { minLength = minLength
-        , maxLength = maxLength
-        , pattern = pattern
-        , format = Maybe.map stringFormat format
-        , enum = enum
-        , title = title
-        , description = description
-        }
+        Number content ->
+            Model.Number content
 
+        Boolean content ->
+            Model.Boolean content
 
-integerSchema minimum maximum enum title description =
-    Integer
-        { minimum = minimum
-        , maximum = maximum
-        , enum = enum
-        , title = title
-        , description = description
-        }
+        Null content ->
+            Model.Null content
 
+        OneOf content ->
+            Model.OneOf { content | subSchemas = List.map toSchema content.subSchemas }
 
-numberSchema minimum maximum enum title description =
-    Number
-        { minimum = minimum
-        , maximum = maximum
-        , enum = enum
-        , title = title
-        , description = description
-        }
+        AnyOf content ->
+            Model.AnyOf { content | subSchemas = List.map toSchema content.subSchemas }
+
+        AllOf content ->
+            Model.AllOf { content | subSchemas = List.map toSchema content.subSchemas }
+
+        Fallback value ->
+            Model.Fallback value
 
 
-booleanSchema title description =
-    Boolean
-        { title = title
-        , description = description
-        }
-
-
-nullSchema title description =
-    Null
-        { title = title
-        , description = description
-        }
-
-
-oneOfSchema subSchemas title description =
-    OneOf
-        { subSchemas = subSchemas
-        , title = title
-        , description = description
-        }
-
-
-anyOfSchema subSchemas title description =
-    AnyOf
-        { subSchemas = subSchemas
-        , title = title
-        , description = description
-        }
-
-
-allOfSchema subSchemas title description =
-    AllOf
-        { subSchemas = subSchemas
-        , title = title
-        , description = description
-        }
-
-
-stringFormat s =
-    case s of
+stringFormat : String -> Model.StringFormat
+stringFormat format =
+    case format of
         "date-time" ->
-            DateTime
+            Model.DateTime
 
         "email" ->
-            Email
+            Model.Email
 
         "hostname" ->
-            Hostname
+            Model.Hostname
 
         "ipv4" ->
-            Ipv4
+            Model.Ipv4
 
         "ipv6" ->
-            Ipv6
+            Model.Ipv6
 
         "uri" ->
-            Uri
+            Model.Uri
 
         _ ->
-            Custom s
+            Model.Custom format
