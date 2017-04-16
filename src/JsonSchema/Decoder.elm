@@ -18,64 +18,50 @@ decoder =
     lazy
         (\_ ->
             oneOf
-                [ field "type" string
-                    |> andThen
-                        (\t ->
-                            case t of
-                                "object" ->
-                                    decode objectSchema
-                                        |> optional "properties" (keyValuePairs decoder) []
-                                        |> optional "required" (list string) []
-                                        |> optionalMaybe "title" string
-                                        |> optionalMaybe "description" string
-
-                                "array" ->
-                                    decode arraySchema
-                                        |> optionalMaybe "items" decoder
-                                        |> optionalMaybe "minItems" int
-                                        |> optionalMaybe "maxItems" int
-                                        |> optionalMaybe "title" string
-                                        |> optionalMaybe "description" string
-
-                                "string" ->
-                                    decode stringSchema
-                                        |> optionalMaybe "minLength" int
-                                        |> optionalMaybe "maxLength" int
-                                        |> optionalMaybe "pattern" string
-                                        |> optionalMaybe "format" string
-                                        |> optionalMaybe "enum" (list string)
-                                        |> optionalMaybe "title" string
-                                        |> optionalMaybe "description" string
-
-                                "integer" ->
-                                    decode integerSchema
-                                        |> optionalMaybe "minimum" int
-                                        |> optionalMaybe "maximum" int
-                                        |> optionalMaybe "enum" (list int)
-                                        |> optionalMaybe "title" string
-                                        |> optionalMaybe "description" string
-
-                                "number" ->
-                                    decode numberSchema
-                                        |> optionalMaybe "minimum" float
-                                        |> optionalMaybe "maximum" float
-                                        |> optionalMaybe "enum" (list float)
-                                        |> optionalMaybe "title" string
-                                        |> optionalMaybe "description" string
-
-                                "boolean" ->
-                                    decode booleanSchema
-                                        |> optionalMaybe "title" string
-                                        |> optionalMaybe "description" string
-
-                                "null" ->
-                                    decode nullSchema
-                                        |> optionalMaybe "title" string
-                                        |> optionalMaybe "description" string
-
-                                _ ->
-                                    fail ("Unknown object type `" ++ t ++ "`")
-                        )
+                [ decode objectSchema
+                    |> optional "properties" (keyValuePairs decoder) []
+                    |> optional "required" (list string) []
+                    |> optionalMaybe "title" string
+                    |> optionalMaybe "description" string
+                    |> withType "object"
+                , decode arraySchema
+                    |> optionalMaybe "items" decoder
+                    |> optionalMaybe "minItems" int
+                    |> optionalMaybe "maxItems" int
+                    |> optionalMaybe "title" string
+                    |> optionalMaybe "description" string
+                    |> withType "array"
+                , decode stringSchema
+                    |> optionalMaybe "minLength" int
+                    |> optionalMaybe "maxLength" int
+                    |> optionalMaybe "pattern" string
+                    |> optionalMaybe "format" string
+                    |> optionalMaybe "enum" (list string)
+                    |> optionalMaybe "title" string
+                    |> optionalMaybe "description" string
+                    |> withType "string"
+                , decode integerSchema
+                    |> optionalMaybe "minimum" int
+                    |> optionalMaybe "maximum" int
+                    |> optionalMaybe "enum" (list int)
+                    |> optionalMaybe "title" string
+                    |> optionalMaybe "description" string
+                    |> withType "integer"
+                , decode numberSchema
+                    |> optionalMaybe "minimum" float
+                    |> optionalMaybe "maximum" float
+                    |> optionalMaybe "enum" (list float)
+                    |> optionalMaybe "title" string
+                    |> optionalMaybe "description" string
+                    |> withType "number"
+                , decode booleanSchema
+                    |> optionalMaybe "title" string
+                    |> optionalMaybe "description" string
+                    |> withType "boolean"
+                , decode nullSchema
+                    |> optionalMaybe "title" string
+                    |> optionalMaybe "description" string
+                    |> withType "null"
                 , decode oneOfSchema
                     |> required "oneOf" (list decoder)
                     |> optionalMaybe "title" string
@@ -94,6 +80,28 @@ decoder =
 
 
 -- HELPERS --
+
+
+{-| Ensure a decoder has a specific "type" value.
+-}
+withType : String -> Decoder Schema -> Decoder Schema
+withType typeString decoder =
+    field "type" (constant typeString string)
+        |> andThen (always decoder)
+
+
+{-| Decode into a specific expected value or fail.
+-}
+constant : a -> Decoder a -> Decoder a
+constant expectedValue decoder =
+    decoder
+        |> andThen
+            (\actualValue ->
+                if actualValue == expectedValue then
+                    succeed actualValue
+                else
+                    fail <| "Expected value: " ++ (toString expectedValue) ++ " but got value: " ++ (toString actualValue)
+            )
 
 
 optionalMaybe n d =
