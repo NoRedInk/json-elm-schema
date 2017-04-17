@@ -1,5 +1,7 @@
 module JsonSchema.Model exposing (..)
 
+import Json.Decode
+
 
 type Schema
     = Object ObjectSchema
@@ -9,9 +11,12 @@ type Schema
     | Number NumberSchema
     | Boolean (BaseSchema {})
     | Null (BaseSchema {})
+    | Ref RefSchema
     | OneOf BaseCombinatorSchema
     | AnyOf BaseCombinatorSchema
     | AllOf BaseCombinatorSchema
+    | Lazy (() -> Schema)
+    | Fallback Json.Decode.Value
 
 
 type alias BaseSchema extras =
@@ -72,6 +77,12 @@ type alias StringSchema =
             , format : Maybe StringFormat
             }
         )
+
+
+type alias RefSchema =
+    BaseSchema
+        { ref : String
+        }
 
 
 type alias BaseCombinatorSchema =

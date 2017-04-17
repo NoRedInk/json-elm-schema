@@ -5,8 +5,11 @@ module JsonSchema.Encoder exposing (encode, encodeValue, EncoderProgram, encodeS
 @docs encode, encodeValue, EncoderProgram, encodeSchemaProgram
 -}
 
-import JsonSchema.Model exposing (..)
+import Dict exposing (Dict)
 import Json.Encode as Encode
+import Json.Decode as Decode
+import JsonSchema.Model exposing (..)
+import JsonSchema.Util exposing (hash)
 import Maybe.Extra
 
 
@@ -36,21 +39,44 @@ encodeSchemaProgram schema emit =
 -}
 encode : Schema -> String
 encode schema =
-    schema
-        |> encodeValue
-        |> Encode.encode 2
+    Encode.encode 2 (encodeValue schema)
 
 
 {-| Encode an elm json schema into a json value.
 -}
 encodeValue : Schema -> Encode.Value
 encodeValue schema =
+    let
+        cache : ThunkCache
+        cache =
+            findThunks schema Dict.empty
+
+        definitions : Encode.Value
+        definitions =
+            Dict.toList cache
+                |> List.map (Tuple.mapSecond <| encodeSubSchema cache)
+                |> Encode.object
+
+        addDefinitions : Encode.Value -> Encode.Value
+        addDefinitions schemaValue =
+            if Dict.isEmpty cache then
+                schemaValue
+            else
+                set "definitions" definitions schemaValue
+    in
+        schema
+            |> encodeSubSchema cache
+            |> addDefinitions
+
+
+encodeSubSchema : ThunkCache -> Schema -> Encode.Value
+encodeSubSchema cache schema =
     case schema of
         Object objectSchema ->
             [ Just ( "type", Encode.string "object" )
             , Maybe.map ((,) "title" << Encode.string) objectSchema.title
             , Maybe.map ((,) "description" << Encode.string) objectSchema.description
-            , Just ( "properties", (convertProperty objectSchema.properties) )
+            , Just ( "properties", (convertProperty cache objectSchema.properties) )
             , Just ( "required", (findRequiredFields objectSchema.properties) )
             ]
                 |> Maybe.Extra.values
@@ -60,7 +86,7 @@ encodeValue schema =
             [ Just ( "type", Encode.string "array" )
             , Maybe.map ((,) "title" << Encode.string) arraySchema.title
             , Maybe.map ((,) "description" << Encode.string) arraySchema.description
-            , Maybe.map ((,) "items" << encodeValue) arraySchema.items
+            , Maybe.map ((,) "items" << encodeSubSchema cache) arraySchema.items
             , Maybe.map ((,) "minItems" << Encode.int) arraySchema.minItems
             , Maybe.map ((,) "maxItems" << Encode.int) arraySchema.maxItems
             ]
@@ -110,6 +136,14 @@ encodeValue schema =
                 |> Maybe.Extra.values
                 |> Encode.object
 
+        Ref refSchema ->
+            [ Just ( "$ref", Encode.string refSchema.ref )
+            , Maybe.map ((,) "title" << Encode.string) refSchema.title
+            , Maybe.map ((,) "description" << Encode.string) refSchema.description
+            ]
+                |> Maybe.Extra.values
+                |> Encode.object
+
         Null nullSchema ->
             [ Just ( "type", Encode.string "null" )
             , Maybe.map ((,) "title" << Encode.string) nullSchema.title
@@ -121,7 +155,7 @@ encodeValue schema =
         OneOf oneOfSchema ->
             [ Maybe.map ((,) "title" << Encode.string) oneOfSchema.title
             , Maybe.map ((,) "description" << Encode.string) oneOfSchema.description
-            , List.map encodeValue oneOfSchema.subSchemas
+            , List.map (encodeSubSchema cache) oneOfSchema.subSchemas
                 |> Encode.list
                 |> (,) "oneOf"
                 |> Just
@@ -132,7 +166,7 @@ encodeValue schema =
         AnyOf anyOfSchema ->
             [ Maybe.map ((,) "title" << Encode.string) anyOfSchema.title
             , Maybe.map ((,) "description" << Encode.string) anyOfSchema.description
-            , List.map encodeValue anyOfSchema.subSchemas
+            , List.map (encodeSubSchema cache) anyOfSchema.subSchemas
                 |> Encode.list
                 |> (,) "anyOf"
                 |> Just
@@ -143,7 +177,7 @@ encodeValue schema =
         AllOf allOfSchema ->
             [ Maybe.map ((,) "title" << Encode.string) allOfSchema.title
             , Maybe.map ((,) "description" << Encode.string) allOfSchema.description
-            , List.map encodeValue allOfSchema.subSchemas
+            , List.map (encodeSubSchema cache) allOfSchema.subSchemas
                 |> Encode.list
                 |> (,) "allOf"
                 |> Just
@@ -151,18 +185,102 @@ encodeValue schema =
                 |> Maybe.Extra.values
                 |> Encode.object
 
+        Lazy thunk ->
+            [ ( "$ref", Encode.string <| "#/definitions/" ++ (hash <| thunk ()) ) ]
+                |> Encode.object
 
-convertProperty : List ObjectProperty -> Encode.Value
-convertProperty properties =
+        Fallback value ->
+            value
+
+
+type alias ThunkCache =
+    Dict String Schema
+
+
+findThunks : Schema -> ThunkCache -> ThunkCache
+findThunks schema cache =
+    case schema of
+        Object { properties } ->
+            List.map getPropertySchema properties
+                |> List.foldr findThunks cache
+
+        Array { items } ->
+            Maybe.Extra.unwrap cache (flip findThunks cache) items
+
+        String _ ->
+            cache
+
+        Integer _ ->
+            cache
+
+        Number _ ->
+            cache
+
+        Boolean _ ->
+            cache
+
+        Null _ ->
+            cache
+
+        Ref _ ->
+            cache
+
+        OneOf { subSchemas } ->
+            List.foldr findThunks cache subSchemas
+
+        AnyOf { subSchemas } ->
+            List.foldr findThunks cache subSchemas
+
+        AllOf { subSchemas } ->
+            List.foldr findThunks cache subSchemas
+
+        Lazy thunk ->
+            thunkDict thunk cache
+
+        Fallback _ ->
+            cache
+
+
+getPropertySchema : ObjectProperty -> Schema
+getPropertySchema property =
+    case property of
+        Required _ schema ->
+            schema
+
+        Optional _ schema ->
+            schema
+
+
+thunkDict : (() -> Schema) -> ThunkCache -> ThunkCache
+thunkDict thunk cache =
+    let
+        schema : Schema
+        schema =
+            thunk ()
+
+        key : String
+        key =
+            hash schema
+    in
+        if Dict.member key cache then
+            cache
+        else
+            cache
+                |> Dict.insert key schema
+                |> findThunks schema
+
+
+convertProperty : ThunkCache -> List ObjectProperty -> Encode.Value
+convertProperty cache properties =
     properties
         |> List.map
             (\property ->
                 case property of
                     Required name schema ->
-                        ( name, encodeValue schema )
+                        ( name, encodeSubSchema cache schema )
 
                     Optional name schema ->
-                        ( name, encodeValue schema )
+                        ( name, encodeSubSchema cache schema )
             )
         |> Encode.object
 
@@ -207,3 +325,14 @@ printFormat format =
 
         Custom customFormat ->
             customFormat
+
+
+{-| Try to set a key value pair on a JSON object.
+If the passed in JSON value is not an object, return it unchanged.
+-}
+set : String -> Encode.Value -> Encode.Value -> Encode.Value
+set key value jsonObj =
+    Decode.decodeValue (Decode.keyValuePairs Decode.value) jsonObj
+        |> Result.map ((::) ( key, value ))
+        |> Result.map Encode.object
+        |> Result.withDefault jsonObj

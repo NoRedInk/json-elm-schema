@@ -298,6 +298,15 @@ validate schema v =
                                 [ ( [], TooFewMatches ) ]
                    )
 
+        Ref _ ->
+            []
+
+        Lazy f ->
+            validate (f ()) v
+
+        Fallback _ ->
+            []
+
 
 getDecodeError : Result String (List Error) -> List Error
 getDecodeError res =
