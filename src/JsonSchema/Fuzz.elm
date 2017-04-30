@@ -47,6 +47,9 @@ schemaValue schema =
         Null _ ->
             nullFuzzer
 
+        Ref _ ->
+            Debug.crash "Fuzzing a ref schema is not supported"
+
         AnyOf anyOfSchema ->
             anyOfFuzzer anyOfSchema
 
@@ -57,6 +60,12 @@ schemaValue schema =
 
         AllOf allOfSchema ->
             Debug.crash "Fuzzing an allOf schema is currently not supported"
+
+        Lazy thunk ->
+            Debug.crash "Fuzzing a lazy schema is currently not supported"
+
+        Fallback value ->
+            Debug.crash "Fuzzing a fallback schema is not supported"
 
 
 objectFuzzer : ObjectSchema -> Fuzzer Value

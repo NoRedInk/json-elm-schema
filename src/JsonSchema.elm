@@ -1,4 +1,4 @@
-module JsonSchema exposing (Schema, required, optional, title, description, enum, minimum, maximum, properties, items, minItems, maxItems, minLength, maxLength, pattern, format, dateTime, email, hostname, ipv4, ipv6, uri, customFormat, object, array, string, integer, number, boolean, null, oneOf, allOf, anyOf)
+module JsonSchema exposing (Schema, required, optional, title, description, enum, minimum, maximum, properties, items, minItems, maxItems, minLength, maxLength, pattern, format, dateTime, email, hostname, ipv4, ipv6, uri, customFormat, object, array, string, integer, number, boolean, null, oneOf, allOf, anyOf, lazy)
 
 {-| This library allows you to write your json schema files in elm, preventing inadvertent errors.
 
@@ -6,7 +6,7 @@ module JsonSchema exposing (Schema, required, optional, title, description, enum
 @docs Schema
 
 # Schema types
-@docs object, array, string, integer, number, boolean, null, oneOf, allOf, anyOf
+@docs object, array, string, integer, number, boolean, null, oneOf, allOf, anyOf, lazy
 
 # Keywords
 @docs title, description, enum, minimum, maximum, properties, items, minItems, maxItems, minLength, maxLength, pattern, format
@@ -361,3 +361,10 @@ anyOf : List BaseCombinatorSchemaProperty -> List Schema -> Schema
 anyOf props subSchemas =
     List.foldl (<|) { defaultCombinatorSchema | subSchemas = subSchemas } props
         |> AnyOf
+
+
+{-| Create a lazy type schema.
+-}
+lazy : (() -> Schema) -> Schema
+lazy thunk =
+    Lazy thunk
