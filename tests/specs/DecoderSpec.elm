@@ -1,4 +1,4 @@
-module DecoderSpec exposing (spec)
+module DecoderSpec exposing (..)
 
 import Expect exposing (pass)
 import Fixtures
@@ -50,9 +50,9 @@ testSchemaDecoder schema =
         jsonSchema =
             encode schema
     in
-        test ("decoding work with schema: " ++ jsonSchema) <|
-            \_ ->
-                jsonSchema
-                    |> Decode.decodeString decoder
-                    |> Result.map encode
-                    |> Expect.equal (Ok jsonSchema)
+    test ("decoding work with schema: " ++ jsonSchema) <|
+        \_ ->
+            jsonSchema
+                |> Decode.decodeString decoder
+                |> Result.map encode
+                |> Expect.equal (Ok jsonSchema)

@@ -1,13 +1,14 @@
-module JsonSchema.Encoder exposing (encode, encodeValue, EncoderProgram, encodeSchemaProgram)
+module JsonSchema.Encoder exposing (EncoderProgram, encode, encodeSchemaProgram, encodeValue)
 
 {-| Encoding elm json schemas to real json.
 
 @docs encode, encodeValue, EncoderProgram, encodeSchemaProgram
+
 -}
 
 import Dict exposing (Dict)
-import Json.Encode as Encode
 import Json.Decode as Decode
+import Json.Encode as Encode
 import JsonSchema.Model exposing (..)
 import JsonSchema.Util exposing (hash)
 import Maybe.Extra
@@ -22,16 +23,18 @@ type alias EncoderProgram =
 {-| A program to use for encoding a schema.
 
     main : EncoderProgram
-    main = encoderSchemaProgram mySchema emit
+    main =
+        encoderSchemaProgram mySchema emit
 
     port emit : String -> Cmd a
+
 -}
 encodeSchemaProgram : Schema -> (String -> Cmd ()) -> EncoderProgram
 encodeSchemaProgram schema emit =
     Platform.program
         { init = ( (), emit (encode schema) )
-        , update = (\_ _ -> ( (), Cmd.none ))
-        , subscriptions = (\_ -> Sub.none)
+        , update = \_ _ -> ( (), Cmd.none )
+        , subscriptions = \_ -> Sub.none
         }
 
 
@@ -64,9 +67,9 @@ encodeValue schema =
             else
                 set "definitions" definitions schemaValue
     in
-        schema
-            |> encodeSubSchema cache
-            |> addDefinitions
+    schema
+        |> encodeSubSchema cache
+        |> addDefinitions
 
 
 encodeSubSchema : ThunkCache -> Schema -> Encode.Value
@@ -76,8 +79,8 @@ encodeSubSchema cache schema =
             [ Just ( "type", Encode.string "object" )
             , Maybe.map ((,) "title" << Encode.string) objectSchema.title
             , Maybe.map ((,) "description" << Encode.string) objectSchema.description
-            , Just ( "properties", (convertProperty cache objectSchema.properties) )
-            , Just ( "required", (findRequiredFields objectSchema.properties) )
+            , Just ( "properties", convertProperty cache objectSchema.properties )
+            , Just ( "required", findRequiredFields objectSchema.properties )
             ]
                 |> Maybe.Extra.values
                 |> Encode.object
@@ -262,12 +265,12 @@ thunkDict thunk cache =
         key =
             hash schema
     in
-        if Dict.member key cache then
-            cache
-        else
-            cache
-                |> Dict.insert key schema
-                |> findThunks schema
+    if Dict.member key cache then
+        cache
+    else
+        cache
+            |> Dict.insert key schema
+            |> findThunks schema
 
 
 convertProperty : ThunkCache -> List ObjectProperty -> Encode.Value

@@ -38,7 +38,7 @@ spec =
 -}
 testSchemaFuzzer : Schema -> Test
 testSchemaFuzzer schema =
-    fuzz (schemaValue schema) ("fuzzer works with schema: " ++ (toString schema)) <|
+    fuzz (schemaValue schema) ("fuzzer works with schema: " ++ toString schema) <|
         \value ->
             JsonSchema.Validator.validate schema value
                 |> Expect.equal []

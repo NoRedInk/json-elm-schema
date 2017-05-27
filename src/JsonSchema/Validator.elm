@@ -1,4 +1,4 @@
-module JsonSchema.Validator exposing (validate, Error, ErrorMessage(..))
+module JsonSchema.Validator exposing (Error, ErrorMessage(..), validate)
 
 {-| Validating a JSON Schema.
 
@@ -10,11 +10,11 @@ It does not yet validate the `format` keyword.
 -}
 
 import Array
-import JsonSchema.Model exposing (..)
+import Dict exposing (Dict)
 import Json.Decode exposing (..)
 import Json.Pointer
+import JsonSchema.Model exposing (..)
 import Regex
-import Dict exposing (Dict)
 
 
 {-| The error type from a validation. It contains a JSON Pointer to where
@@ -273,7 +273,7 @@ validate schema v =
         AnyOf anyOfSchema ->
             anyOfSchema.subSchemas
                 |> List.map (flip validate v)
-                |> List.filter (List.isEmpty)
+                |> List.filter List.isEmpty
                 |> List.length
                 |> (\i ->
                         case i of

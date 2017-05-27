@@ -1,8 +1,8 @@
 module Fuzz.Extra exposing (..)
 
-import Shrink exposing (Shrinker)
 import Fuzz exposing (..)
 import Random.Pcg as Random
+import Shrink exposing (Shrinker)
 
 
 {-| A fuzzer for float values with a given minimum, inclusive.
@@ -37,11 +37,11 @@ floatMaximum hi =
 
 {-| A fuzzer that randomly selects elements in a list.
 -}
-anyOrCrash : List a -> Fuzzer a
-anyOrCrash values =
+oneOf : List a -> Fuzzer a
+oneOf values =
     values
         |> List.map (Fuzz.constant >> (,) 1)
-        |> Fuzz.frequencyOrCrash
+        |> Fuzz.frequency
 
 
 {-| A fuzzer that creates lists with bounded lengths.

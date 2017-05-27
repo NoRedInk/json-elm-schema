@@ -92,7 +92,7 @@ type alias BaseCombinatorSchema =
 
 
 {-| One of the built-in string formats defined by the json schema specification,
-    or a custom format your schema validator understands.
+or a custom format your schema validator understands.
 -}
 type StringFormat
     = DateTime
