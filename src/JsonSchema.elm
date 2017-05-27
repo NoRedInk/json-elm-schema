@@ -1,21 +1,32 @@
-module JsonSchema exposing (Schema, required, optional, title, description, enum, minimum, maximum, properties, items, minItems, maxItems, minLength, maxLength, pattern, format, dateTime, email, hostname, ipv4, ipv6, uri, customFormat, object, array, string, integer, number, boolean, null, oneOf, allOf, anyOf, lazy)
+module JsonSchema exposing (Schema, allOf, anyOf, array, boolean, customFormat, dateTime, description, email, enum, format, hostname, integer, ipv4, ipv6, items, lazy, maxItems, maxLength, maximum, minItems, minLength, minimum, null, number, object, oneOf, optional, pattern, properties, required, string, title, uri)
 
 {-| This library allows you to write your json schema files in elm, preventing inadvertent errors.
 
+
 # General
+
 @docs Schema
 
+
 # Schema types
+
 @docs object, array, string, integer, number, boolean, null, oneOf, allOf, anyOf, lazy
 
+
 # Keywords
+
 @docs title, description, enum, minimum, maximum, properties, items, minItems, maxItems, minLength, maxLength, pattern, format
 
+
 # Property constructors
+
 @docs required, optional
 
+
 # String formats
+
 @docs dateTime, email, hostname, ipv4, ipv6, uri, customFormat
+
 -}
 
 import JsonSchema.Model exposing (..)

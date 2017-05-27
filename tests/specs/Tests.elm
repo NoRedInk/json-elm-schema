@@ -1,42 +1,13 @@
-module Tests exposing (spec)
+module Tests exposing (..)
 
 import Expect
 import Fixtures exposing (..)
-import Helpers exposing (expectAt, lengthAt, expectEqualResult)
+import Helpers exposing (expectAt, expectEqualResult, lengthAt)
 import Json.Decode as Decode
 import JsonSchema exposing (..)
 import JsonSchema.Encoder exposing (encode, encodeValue)
 import JsonSchema.Util exposing (hash)
 import Test exposing (..)
-
-
-spec : Test
-spec =
-    describe "JsonSchema"
-        [ objectSchemaSpec
-        , arraySchemaSpec
-        , stringSchemaSpec
-        , stringEnumSchemaSpec
-        , integerSchemaSpec
-        , integerEnumSchemaSpec
-        , numberSchemaSpec
-        , numberEnumSchemaSpec
-        , booleanSchemaSpec
-        , nullSchemaSpec
-        , refSchemaSpec
-        , oneOfSpec
-        , anyOfSpec
-        , allOfSpec
-        , lazySchemaSpec
-        , formatDateTime
-        , formatEmail
-        , formatHostname
-        , formatIpv4
-        , formatIpv6
-        , formatUri
-        , formatCustom
-        , fallbackSchemaSpec
-        ]
 
 
 objectSchemaSpec : Test
@@ -285,7 +256,7 @@ numberSchemaSpec =
 
 numberEnumSchemaSpec : Test
 numberEnumSchemaSpec =
-    describe "number schema"
+    describe "number enum schema"
         [ test "title property is set" <|
             \() ->
                 encode numberEnumSchema
@@ -351,7 +322,7 @@ nullSchemaSpec =
 
 refSchemaSpec : Test
 refSchemaSpec =
-    describe "null schema"
+    describe "ref schema"
         [ test "title property is set" <|
             \() ->
                 encode refSchema
@@ -467,20 +438,20 @@ lazySchemaSpec =
         key =
             hash lazySchema
     in
-        describe "lazy"
-            [ test "is turned into a ref" <|
-                \() ->
-                    encode lazySchema
-                        |> expectAt
-                            [ "items", "$ref" ]
-                            ( Decode.string, "#/definitions/" ++ key )
-            , test "is turned into a ref" <|
-                \() ->
-                    encode lazySchema
-                        |> expectAt
-                            [ "definitions", key, "type" ]
-                            ( Decode.string, "array" )
-            ]
+    describe "lazy"
+        [ test "is turned into a ref" <|
+            \() ->
+                encode lazySchema
+                    |> expectAt
+                        [ "items", "$ref" ]
+                        ( Decode.string, "#/definitions/" ++ key )
+        , test "can be found in the definitions group" <|
+            \() ->
+                encode lazySchema
+                    |> expectAt
+                        [ "definitions", key, "type" ]
+                        ( Decode.string, "array" )
+        ]
 
 
 formatDateTime : Test
@@ -490,14 +461,14 @@ formatDateTime =
         schema =
             string [ format dateTime ]
     in
-        describe "format dateTime"
-            [ test "format property is set" <|
-                \() ->
-                    encode schema
-                        |> expectAt
-                            [ "format" ]
-                            ( Decode.string, "date-time" )
-            ]
+    describe "format dateTime"
+        [ test "format property is set" <|
+            \() ->
+                encode schema
+                    |> expectAt
+                        [ "format" ]
+                        ( Decode.string, "date-time" )
+        ]
 
 
 formatEmail : Test
@@ -507,14 +478,14 @@ formatEmail =
         schema =
             string [ format email ]
     in
-        describe "format email"
-            [ test "format property is set" <|
-                \() ->
-                    encode schema
-                        |> expectAt
-                            [ "format" ]
-                            ( Decode.string, "email" )
-            ]
+    describe "format email"
+        [ test "format property is set" <|
+            \() ->
+                encode schema
+                    |> expectAt
+                        [ "format" ]
+                        ( Decode.string, "email" )
+        ]
 
 
 formatHostname : Test
@@ -524,14 +495,14 @@ formatHostname =
         schema =
             string [ format hostname ]
     in
-        describe "format hostname"
-            [ test "format property is set" <|
-                \() ->
-                    encode schema
-                        |> expectAt
-                            [ "format" ]
-                            ( Decode.string, "hostname" )
-            ]
+    describe "format hostname"
+        [ test "format property is set" <|
+            \() ->
+                encode schema
+                    |> expectAt
+                        [ "format" ]
+                        ( Decode.string, "hostname" )
+        ]
 
 
 formatIpv4 : Test
@@ -541,14 +512,14 @@ formatIpv4 =
         schema =
             string [ format ipv4 ]
     in
-        describe "format ipv4"
-            [ test "format property is set" <|
-                \() ->
-                    encode schema
-                        |> expectAt
-                            [ "format" ]
-                            ( Decode.string, "ipv4" )
-            ]
+    describe "format ipv4"
+        [ test "format property is set" <|
+            \() ->
+                encode schema
+                    |> expectAt
+                        [ "format" ]
+                        ( Decode.string, "ipv4" )
+        ]
 
 
 formatIpv6 : Test
@@ -558,14 +529,14 @@ formatIpv6 =
         schema =
             string [ format ipv6 ]
     in
-        describe "format ipv6"
-            [ test "format property is set" <|
-                \() ->
-                    encode schema
-                        |> expectAt
-                            [ "format" ]
-                            ( Decode.string, "ipv6" )
-            ]
+    describe "format ipv6"
+        [ test "format property is set" <|
+            \() ->
+                encode schema
+                    |> expectAt
+                        [ "format" ]
+                        ( Decode.string, "ipv6" )
+        ]
 
 
 formatUri : Test
@@ -575,14 +546,14 @@ formatUri =
         schema =
             string [ format uri ]
     in
-        describe "format uri"
-            [ test "format property is set" <|
-                \() ->
-                    encode schema
-                        |> expectAt
-                            [ "format" ]
-                            ( Decode.string, "uri" )
-            ]
+    describe "format uri"
+        [ test "format property is set" <|
+            \() ->
+                encode schema
+                    |> expectAt
+                        [ "format" ]
+                        ( Decode.string, "uri" )
+        ]
 
 
 formatCustom : Test
@@ -592,14 +563,14 @@ formatCustom =
         schema =
             string [ format (customFormat "foo") ]
     in
-        describe "format customFormat"
-            [ test "format property is set" <|
-                \() ->
-                    encode schema
-                        |> expectAt
-                            [ "format" ]
-                            ( Decode.string, "foo" )
-            ]
+    describe "format customFormat"
+        [ test "format property is set" <|
+            \() ->
+                encode schema
+                    |> expectAt
+                        [ "format" ]
+                        ( Decode.string, "foo" )
+        ]
 
 
 fallbackSchemaSpec : Test

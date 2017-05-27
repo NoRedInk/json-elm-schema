@@ -3,13 +3,14 @@ module JsonSchema.Fuzz exposing (schemaString, schemaValue)
 {-| Fuzzers for json structures corresponding to a certain schema.
 
 @docs schemaString, schemaValue
+
 -}
 
 import Fuzz exposing (Fuzzer)
 import Fuzz.Extra
 import Json.Encode as Encode exposing (Value)
-import Maybe.Extra
 import JsonSchema.Model exposing (..)
+import Maybe.Extra
 import Random
 
 
@@ -144,17 +145,17 @@ stringFuzzer schema =
                 Just maxLength ->
                     String.slice 0 maxLength str
     in
-        case schema.enum of
-            Just enum ->
-                enum
-                    |> Fuzz.Extra.anyOrCrash
-                    |> Fuzz.map Encode.string
+    case schema.enum of
+        Just enum ->
+            enum
+                |> Fuzz.Extra.oneOf
+                |> Fuzz.map Encode.string
 
-            Nothing ->
-                Fuzz.string
-                    |> Fuzz.map expandIfTooShort
-                    |> Fuzz.map cropIfTooLong
-                    |> Fuzz.map Encode.string
+        Nothing ->
+            Fuzz.string
+                |> Fuzz.map expandIfTooShort
+                |> Fuzz.map cropIfTooLong
+                |> Fuzz.map Encode.string
 
 
 numberFuzzer : NumberSchema -> Fuzzer Value
@@ -162,7 +163,7 @@ numberFuzzer schema =
     case ( schema.enum, schema.minimum, schema.maximum ) of
         ( Just enum, _, _ ) ->
             enum
-                |> Fuzz.Extra.anyOrCrash
+                |> Fuzz.Extra.oneOf
                 |> Fuzz.map Encode.float
 
         ( Nothing, Nothing, Nothing ) ->
@@ -187,7 +188,7 @@ integerFuzzer schema =
     case ( schema.enum, schema.minimum, schema.maximum ) of
         ( Just enum, _, _ ) ->
             enum
-                |> Fuzz.Extra.anyOrCrash
+                |> Fuzz.Extra.oneOf
                 |> Fuzz.map Encode.int
 
         ( Nothing, Nothing, Nothing ) ->
@@ -223,4 +224,4 @@ anyOfFuzzer : BaseCombinatorSchema -> Fuzzer Value
 anyOfFuzzer anyOfSchema =
     anyOfSchema.subSchemas
         |> List.map (schemaValue >> (,) 1)
-        |> Fuzz.frequencyOrCrash
+        |> Fuzz.frequency

@@ -3,12 +3,13 @@ module JsonSchema.Decoder exposing (decoder)
 {-| Decoding a JSON Schema to an `JsonSchema.Schema`
 
 @docs decoder
+
 -}
 
-import JsonSchema.Model as Model exposing (Schema)
+import Dict exposing (Dict)
 import Json.Decode exposing (..)
 import Json.Decode.Pipeline exposing (..)
-import Dict exposing (Dict)
+import JsonSchema.Model as Model exposing (Schema)
 import Set
 
 
@@ -213,7 +214,7 @@ constant expectedValue decoder =
                 if actualValue == expectedValue then
                     succeed actualValue
                 else
-                    fail <| "Expected value: " ++ (toString expectedValue) ++ " but got value: " ++ (toString actualValue)
+                    fail <| "Expected value: " ++ toString expectedValue ++ " but got value: " ++ toString actualValue
             )
 
 
@@ -232,20 +233,21 @@ toSchema definitions preSchema =
 
                 objectProperty ( key, preSchema ) =
                     toSchema definitions preSchema
-                        |> if Set.member key requiredSet then
-                            Model.Required key
-                           else
-                            Model.Optional key
+                        |> (if Set.member key requiredSet then
+                                Model.Required key
+                            else
+                                Model.Optional key
+                           )
 
                 schemaProperties =
                     Dict.toList properties
                         |> List.map objectProperty
             in
-                Model.Object
-                    { properties = schemaProperties
-                    , title = title
-                    , description = description
-                    }
+            Model.Object
+                { properties = schemaProperties
+                , title = title
+                , description = description
+                }
 
         Array content ->
             Model.Array
