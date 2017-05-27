@@ -24,6 +24,11 @@ personSchema =
                     [ description "Height in meters"
                     , minimum 0
                     ]
+            , required "tags" <|
+                array 
+                    [ items [ string []]
+                    , minItems 1
+                    ]
             ]
         ]
 ```
