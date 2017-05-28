@@ -95,6 +95,14 @@ defaultNumber =
     }
 
 
+defaultBoolean : BooleanSchema
+defaultBoolean =
+    { title = Nothing
+    , description = Nothing
+    , enum = Nothing
+    }
+
+
 defaultCombinatorSchema : BaseCombinatorSchema
 defaultCombinatorSchema =
     { title = Nothing
@@ -133,6 +141,10 @@ type alias IntegerSchemaProperty =
 
 type alias NumberSchemaProperty =
     NumberSchema -> NumberSchema
+
+
+type alias BooleanSchemaProperty =
+    BooleanSchema -> BooleanSchema
 
 
 type alias BaseCombinatorSchemaProperty =
@@ -336,9 +348,9 @@ number props =
 
 {-| Create a boolean type schema.
 -}
-boolean : List (BaseSchemaProperty {}) -> Schema
+boolean : List BooleanSchemaProperty -> Schema
 boolean props =
-    List.foldl (<|) defaultBaseSchema props
+    List.foldl (<|) defaultBoolean props
         |> Boolean
 
 

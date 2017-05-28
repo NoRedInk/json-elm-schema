@@ -135,6 +135,7 @@ encodeSubSchema cache schema =
             [ Just ( "type", Encode.string "boolean" )
             , Maybe.map ((,) "title" << Encode.string) booleanSchema.title
             , Maybe.map ((,) "description" << Encode.string) booleanSchema.description
+            , Maybe.map ((,) "enum" << Encode.list << List.map Encode.bool) booleanSchema.enum
             ]
                 |> Maybe.Extra.values
                 |> Encode.object

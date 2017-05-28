@@ -263,7 +263,7 @@ numberEnumSchemaSpec =
                     |> expectAt
                         [ "title" ]
                         ( Decode.string, "number schema title" )
-        , test "description property is set" <|
+        , test "enum property is set" <|
             \() ->
                 encode numberEnumSchema
                     |> expectAt
@@ -293,6 +293,24 @@ booleanSchemaSpec =
                     |> expectAt
                         [ "type" ]
                         ( Decode.string, "boolean" )
+        ]
+
+
+booleanEnumSchemaSpec : Test
+booleanEnumSchemaSpec =
+    describe "boolean enum schema"
+        [ test "title property is set" <|
+            \() ->
+                encode booleanEnumSchema
+                    |> expectAt
+                        [ "title" ]
+                        ( Decode.string, "Boolean that can only be True" )
+        , test "enum property is set" <|
+            \() ->
+                encode booleanEnumSchema
+                    |> expectAt
+                        [ "enum" ]
+                        ( Decode.list Decode.bool, [ True ] )
         ]
 
 
