@@ -10,7 +10,7 @@ type Schema
     | Integer IntegerSchema
     | Number NumberSchema
     | Boolean BooleanSchema
-    | Null (BaseSchema {})
+    | Null NullSchema
     | Ref RefSchema
     | OneOf BaseCombinatorSchema
     | AnyOf BaseCombinatorSchema
@@ -81,6 +81,10 @@ type alias StringSchema =
 
 type alias BooleanSchema =
     WithEnumSchema Bool (BaseSchema {})
+
+
+type alias NullSchema =
+    BaseSchema {}
 
 
 type alias RefSchema =

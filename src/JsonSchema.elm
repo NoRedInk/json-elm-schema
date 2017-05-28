@@ -147,6 +147,10 @@ type alias BooleanSchemaProperty =
     BooleanSchema -> BooleanSchema
 
 
+type alias NullSchemaProperty =
+    NullSchema -> NullSchema
+
+
 type alias BaseCombinatorSchemaProperty =
     BaseCombinatorSchema -> BaseCombinatorSchema
 
@@ -356,7 +360,7 @@ boolean props =
 
 {-| Create a null type schema.
 -}
-null : List (BaseSchemaProperty {}) -> Schema
+null : List NullSchemaProperty -> Schema
 null props =
     List.foldl (<|) defaultBaseSchema props
         |> Null
