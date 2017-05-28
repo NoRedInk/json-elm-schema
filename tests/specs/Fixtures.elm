@@ -14,6 +14,8 @@ objectSchema =
             [ optional "firstName" <| string []
             , required "lastName" <| string []
             ]
+        , minProperties 3
+        , maxProperties 6
         ]
 
 

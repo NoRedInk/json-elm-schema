@@ -1,4 +1,4 @@
-module JsonSchema exposing (Schema, allOf, anyOf, array, boolean, customFormat, dateTime, description, email, enum, format, hostname, integer, ipv4, ipv6, items, lazy, maxItems, maxLength, maximum, minItems, minLength, minimum, null, number, object, oneOf, optional, pattern, properties, required, string, title, uri)
+module JsonSchema exposing (Schema, allOf, anyOf, array, boolean, customFormat, dateTime, description, email, enum, format, hostname, integer, ipv4, ipv6, items, lazy, maxItems, maxLength, maxProperties, maximum, minItems, minLength, minProperties, minimum, null, number, object, oneOf, optional, pattern, properties, required, string, title, uri)
 
 {-| This library allows you to write your json schema files in elm, preventing inadvertent errors.
 
@@ -50,6 +50,8 @@ defaultObject =
     { title = Nothing
     , description = Nothing
     , properties = []
+    , minProperties = Nothing
+    , maxProperties = Nothing
     }
 
 
@@ -211,6 +213,20 @@ properties properties schema =
     { schema | properties = schema.properties ++ properties }
 
 
+{-| `minProperties` keyword
+-}
+minProperties : Int -> ObjectSchemaProperty
+minProperties min schema =
+    { schema | minProperties = Just min }
+
+
+{-| `maxProperties` keyword
+-}
+maxProperties : Int -> ObjectSchemaProperty
+maxProperties max schema =
+    { schema | maxProperties = Just max }
+
+
 {-| `items` keyword
 -}
 items : Schema -> ArraySchemaProperty
@@ -310,7 +326,7 @@ customFormat =
     Custom
 
 
-{-| Create an oject type schema.
+{-| Create an object type schema.
 -}
 object : List ObjectSchemaProperty -> Schema
 object props =

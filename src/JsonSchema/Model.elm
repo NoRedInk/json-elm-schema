@@ -35,6 +35,8 @@ type alias WithEnumSchema primitive extras =
 type alias ObjectSchema =
     BaseSchema
         { properties : List ObjectProperty
+        , minProperties : Maybe Int
+        , maxProperties : Maybe Int
         }
 
 

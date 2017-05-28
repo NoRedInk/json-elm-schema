@@ -81,6 +81,8 @@ encodeSubSchema cache schema =
             , Maybe.map ((,) "description" << Encode.string) objectSchema.description
             , Just ( "properties", convertProperty cache objectSchema.properties )
             , Just ( "required", findRequiredFields objectSchema.properties )
+            , Maybe.map ((,) "minProperties" << Encode.int) objectSchema.minProperties
+            , Maybe.map ((,) "maxProperties" << Encode.int) objectSchema.maxProperties
             ]
                 |> Maybe.Extra.values
                 |> Encode.object
