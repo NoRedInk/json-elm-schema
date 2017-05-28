@@ -67,9 +67,9 @@ encodeValue schema =
             else
                 set "definitions" definitions schemaValue
     in
-    schema
-        |> encodeSubSchema cache
-        |> addDefinitions
+        schema
+            |> encodeSubSchema cache
+            |> addDefinitions
 
 
 encodeSubSchema : ThunkCache -> Schema -> Encode.Value
@@ -135,6 +135,7 @@ encodeSubSchema cache schema =
             [ Just ( "type", Encode.string "boolean" )
             , Maybe.map ((,) "title" << Encode.string) booleanSchema.title
             , Maybe.map ((,) "description" << Encode.string) booleanSchema.description
+            , Maybe.map ((,) "enum" << Encode.list << List.map Encode.bool) booleanSchema.enum
             ]
                 |> Maybe.Extra.values
                 |> Encode.object
@@ -265,12 +266,12 @@ thunkDict thunk cache =
         key =
             hash schema
     in
-    if Dict.member key cache then
-        cache
-    else
-        cache
-            |> Dict.insert key schema
-            |> findThunks schema
+        if Dict.member key cache then
+            cache
+        else
+            cache
+                |> Dict.insert key schema
+                |> findThunks schema
 
 
 convertProperty : ThunkCache -> List ObjectProperty -> Encode.Value

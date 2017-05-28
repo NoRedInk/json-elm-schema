@@ -19,7 +19,7 @@ type PreSchema
     | String PreStringSchema
     | Integer PreIntegerSchema
     | Number PreNumberSchema
-    | Boolean PreBaseSchema
+    | Boolean PreBooleanSchema
     | Null PreBaseSchema
     | Ref PreRefSchema
     | OneOf PreBaseCombinatorSchema
@@ -71,6 +71,13 @@ type alias PreNumberSchema =
     , minimum : Maybe Float
     , maximum : Maybe Float
     , enum : Maybe (List Float)
+    }
+
+
+type alias PreBooleanSchema =
+    { title : Maybe String
+    , description : Maybe String
+    , enum : Maybe (List Bool)
     }
 
 
@@ -161,9 +168,10 @@ preSchemaDecoder =
                     |> maybeOptional "enum" (list float)
                     |> withType "number"
                     |> map Number
-                , decode PreBaseSchema
+                , decode PreBooleanSchema
                     |> maybeOptional "title" string
                     |> maybeOptional "description" string
+                    |> maybeOptional "enum" (list bool)
                     |> withType "boolean"
                     |> map Boolean
                 , decode PreBaseSchema
@@ -243,11 +251,11 @@ toSchema definitions preSchema =
                     Dict.toList properties
                         |> List.map objectProperty
             in
-            Model.Object
-                { properties = schemaProperties
-                , title = title
-                , description = description
-                }
+                Model.Object
+                    { properties = schemaProperties
+                    , title = title
+                    , description = description
+                    }
 
         Array content ->
             Model.Array

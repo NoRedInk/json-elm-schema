@@ -92,6 +92,14 @@ booleanSchema =
         ]
 
 
+booleanEnumSchema : Schema
+booleanEnumSchema =
+    boolean
+        [ title "Boolean that can only be True"
+        , enum [ True ]
+        ]
+
+
 nullSchema : Schema
 nullSchema =
     null
