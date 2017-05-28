@@ -67,9 +67,9 @@ encodeValue schema =
             else
                 set "definitions" definitions schemaValue
     in
-        schema
-            |> encodeSubSchema cache
-            |> addDefinitions
+    schema
+        |> encodeSubSchema cache
+        |> addDefinitions
 
 
 encodeSubSchema : ThunkCache -> Schema -> Encode.Value
@@ -266,12 +266,12 @@ thunkDict thunk cache =
         key =
             hash schema
     in
-        if Dict.member key cache then
-            cache
-        else
-            cache
-                |> Dict.insert key schema
-                |> findThunks schema
+    if Dict.member key cache then
+        cache
+    else
+        cache
+            |> Dict.insert key schema
+            |> findThunks schema
 
 
 convertProperty : ThunkCache -> List ObjectProperty -> Encode.Value

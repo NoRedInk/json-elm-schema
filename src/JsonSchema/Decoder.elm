@@ -251,11 +251,11 @@ toSchema definitions preSchema =
                     Dict.toList properties
                         |> List.map objectProperty
             in
-                Model.Object
-                    { properties = schemaProperties
-                    , title = title
-                    , description = description
-                    }
+            Model.Object
+                { properties = schemaProperties
+                , title = title
+                , description = description
+                }
 
         Array content ->
             Model.Array
