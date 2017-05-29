@@ -26,7 +26,7 @@ personSchema =
                     ]
             , required "tags" <|
                 array 
-                    [ items [ string []]
+                    [ items <| string []
                     , minItems 1
                     ]
             ]
