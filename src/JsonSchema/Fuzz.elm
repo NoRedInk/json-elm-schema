@@ -42,8 +42,8 @@ schemaValue schema =
         Integer integerSchema ->
             integerFuzzer integerSchema
 
-        Boolean _ ->
-            booleanFuzzer
+        Boolean booleanSchema ->
+            booleanFuzzer booleanSchema
 
         Null _ ->
             nullFuzzer
@@ -208,10 +208,17 @@ integerFuzzer schema =
                 |> Fuzz.map Encode.int
 
 
-booleanFuzzer : Fuzzer Value
-booleanFuzzer =
-    Fuzz.bool
-        |> Fuzz.map Encode.bool
+booleanFuzzer : BooleanSchema -> Fuzzer Value
+booleanFuzzer schema =
+    case schema.enum of
+        Just enum ->
+            enum
+                |> Fuzz.Extra.oneOf
+                |> Fuzz.map Encode.bool
+
+        Nothing ->
+            Fuzz.bool
+                |> Fuzz.map Encode.bool
 
 
 nullFuzzer : Fuzzer Value

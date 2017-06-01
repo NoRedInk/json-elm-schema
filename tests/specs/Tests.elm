@@ -25,6 +25,18 @@ objectSchemaSpec =
                     |> expectAt
                         [ "description" ]
                         ( Decode.string, "object schema description" )
+        , test "minProperties property is set" <|
+            \() ->
+                encode objectSchema
+                    |> expectAt
+                        [ "minProperties" ]
+                        ( Decode.int, 3 )
+        , test "maxProperties property is set" <|
+            \() ->
+                encode objectSchema
+                    |> expectAt
+                        [ "maxProperties" ]
+                        ( Decode.int, 6 )
         , test "has the right type" <|
             \() ->
                 encode objectSchema

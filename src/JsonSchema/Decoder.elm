@@ -33,6 +33,8 @@ type alias PreObjectSchema =
     , description : Maybe String
     , properties : Dict String PreSchema
     , required : List String
+    , minProperties : Maybe Int
+    , maxProperties : Maybe Int
     }
 
 
@@ -132,6 +134,8 @@ preSchemaDecoder =
                     |> maybeOptional "description" string
                     |> optional "properties" (dict preSchemaDecoder) Dict.empty
                     |> optional "required" (list string) []
+                    |> maybeOptional "minProperties" int
+                    |> maybeOptional "maxProperties" int
                     |> withType "object"
                     |> map Object
                 , decode PreArraySchema
@@ -234,7 +238,7 @@ maybeOptional key decoder =
 toSchema : Definitions -> PreSchema -> Schema
 toSchema definitions preSchema =
     case preSchema of
-        Object { title, description, required, properties } ->
+        Object { title, description, required, properties, minProperties, maxProperties } ->
             let
                 requiredSet =
                     Set.fromList required
@@ -255,6 +259,8 @@ toSchema definitions preSchema =
                 { properties = schemaProperties
                 , title = title
                 , description = description
+                , minProperties = minProperties
+                , maxProperties = maxProperties
                 }
 
         Array content ->
