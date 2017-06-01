@@ -15,7 +15,7 @@ module JsonSchema exposing (Schema, allOf, anyOf, array, boolean, customFormat, 
 
 # Keywords
 
-@docs title, description, enum, minimum, maximum, properties, items, minItems, maxItems, minLength, maxLength, pattern, format
+@docs title, description, enum, minimum, maximum, properties, items, minItems, maxItems, minLength, maxLength, pattern, format, minProperties, maxProperties
 
 
 # Property constructors
