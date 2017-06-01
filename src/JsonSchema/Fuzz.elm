@@ -49,7 +49,7 @@ schemaValue schema =
             nullFuzzer
 
         Ref _ ->
-            Debug.crash "Fuzzing a ref schema is not supported"
+            Fuzz.invalid "Fuzzing a ref schema is not supported"
 
         AnyOf anyOfSchema ->
             anyOfFuzzer anyOfSchema
@@ -57,16 +57,16 @@ schemaValue schema =
         OneOf oneOfSchema ->
             -- `oneOf` explicitly demands that a value corresponds to one of the provided schema's and none of the others.
             -- Implementing this will probably require merging the subschema's properties together into a single schema.
-            Debug.crash "Fuzzing a oneOf schema is currently not supported. anyOf is supported, so perhaps you can use that?"
+            Fuzz.invalid "Fuzzing a oneOf schema is currently not supported. anyOf is supported, so perhaps you can use that?"
 
         AllOf allOfSchema ->
-            Debug.crash "Fuzzing an allOf schema is currently not supported"
+            Fuzz.invalid "Fuzzing an allOf schema is currently not supported"
 
         Lazy thunk ->
-            Debug.crash "Fuzzing a lazy schema is currently not supported"
+            Fuzz.invalid "Fuzzing a lazy schema is currently not supported"
 
         Fallback value ->
-            Debug.crash "Fuzzing a fallback schema is not supported"
+            Fuzz.invalid "Fuzzing a fallback schema is not supported"
 
 
 objectFuzzer : ObjectSchema -> Fuzzer Value
