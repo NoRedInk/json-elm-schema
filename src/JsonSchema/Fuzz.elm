@@ -71,9 +71,17 @@ schemaValue schema =
 
 objectFuzzer : ObjectSchema -> Fuzzer Value
 objectFuzzer objectSchema =
-    List.map propertyFuzzer objectSchema.properties
-        |> Fuzz.Extra.sequence
-        |> Fuzz.map (Maybe.Extra.values >> Encode.object)
+    let
+        unfuzzable =
+            Maybe.Extra.isJust objectSchema.minProperties
+                || Maybe.Extra.isJust objectSchema.maxProperties
+    in
+    if unfuzzable then
+        Fuzz.invalid "Fuzzing minProperties or maxProperties is currently not supported."
+    else
+        List.map propertyFuzzer objectSchema.properties
+            |> Fuzz.Extra.sequence
+            |> Fuzz.map (Maybe.Extra.values >> Encode.object)
 
 
 propertyFuzzer : ObjectProperty -> Fuzzer (Maybe ( String, Value ))

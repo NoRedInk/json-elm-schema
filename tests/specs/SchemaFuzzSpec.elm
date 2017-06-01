@@ -31,16 +31,11 @@ spec =
             , array [ items (string []), minItems 5 ]
             , array [ items (string []), maxItems 10 ]
             , array [ items (string []), minItems 5, maxItems 10 ]
-            , object
-                [ properties [ required "id" (integer []) ]
-                , minProperties 2
-                , maxProperties 3
-                ]
             ]
 
 
 {-| Test a schema fuzzer by checking all the values it produces conform to
-    the schema it is based on.
+the schema it is based on.
 -}
 testSchemaFuzzer : Schema -> Test
 testSchemaFuzzer schema =
