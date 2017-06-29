@@ -1,6 +1,7 @@
 module JsonSchema.Model exposing (..)
 
 import Json.Decode
+import Json.Encode as Encode
 
 
 type Schema
@@ -23,6 +24,7 @@ type alias BaseSchema extras =
     { extras
         | title : Maybe String
         , description : Maybe String
+        , examples : Maybe (List Encode.Value)
     }
 
 

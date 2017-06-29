@@ -9,6 +9,7 @@ module JsonSchema.Decoder exposing (decoder)
 import Dict exposing (Dict)
 import Json.Decode exposing (..)
 import Json.Decode.Pipeline exposing (..)
+import Json.Encode as Encode
 import JsonSchema.Model as Model exposing (Schema)
 import Set
 
@@ -35,6 +36,7 @@ type alias PreObjectSchema =
     , required : List String
     , minProperties : Maybe Int
     , maxProperties : Maybe Int
+    , examples : Maybe (List Encode.Value)
     }
 
 
@@ -44,6 +46,7 @@ type alias PreArraySchema =
     , items : Maybe PreSchema
     , minItems : Maybe Int
     , maxItems : Maybe Int
+    , examples : Maybe (List Encode.Value)
     }
 
 
@@ -55,6 +58,7 @@ type alias PreStringSchema =
     , pattern : Maybe String
     , format : Maybe String
     , enum : Maybe (List String)
+    , examples : Maybe (List Encode.Value)
     }
 
 
@@ -64,6 +68,7 @@ type alias PreIntegerSchema =
     , minimum : Maybe Int
     , maximum : Maybe Int
     , enum : Maybe (List Int)
+    , examples : Maybe (List Encode.Value)
     }
 
 
@@ -73,6 +78,7 @@ type alias PreNumberSchema =
     , minimum : Maybe Float
     , maximum : Maybe Float
     , enum : Maybe (List Float)
+    , examples : Maybe (List Encode.Value)
     }
 
 
@@ -80,12 +86,14 @@ type alias PreBooleanSchema =
     { title : Maybe String
     , description : Maybe String
     , enum : Maybe (List Bool)
+    , examples : Maybe (List Encode.Value)
     }
 
 
 type alias PreBaseSchema =
     { title : Maybe String
     , description : Maybe String
+    , examples : Maybe (List Encode.Value)
     }
 
 
@@ -93,6 +101,7 @@ type alias PreRefSchema =
     { title : Maybe String
     , description : Maybe String
     , ref : String
+    , examples : Maybe (List Encode.Value)
     }
 
 
@@ -100,6 +109,7 @@ type alias PreBaseCombinatorSchema =
     { title : Maybe String
     , description : Maybe String
     , subSchemas : List PreSchema
+    , examples : Maybe (List Encode.Value)
     }
 
 
@@ -136,6 +146,7 @@ preSchemaDecoder =
                     |> optional "required" (list string) []
                     |> maybeOptional "minProperties" int
                     |> maybeOptional "maxProperties" int
+                    |> maybeOptional "examples" (list value)
                     |> withType "object"
                     |> map Object
                 , decode PreArraySchema
@@ -144,6 +155,7 @@ preSchemaDecoder =
                     |> maybeOptional "items" preSchemaDecoder
                     |> maybeOptional "minItems" int
                     |> maybeOptional "maxItems" int
+                    |> maybeOptional "examples" (list value)
                     |> withType "array"
                     |> map Array
                 , decode PreStringSchema
@@ -154,6 +166,7 @@ preSchemaDecoder =
                     |> maybeOptional "pattern" string
                     |> maybeOptional "format" string
                     |> maybeOptional "enum" (list string)
+                    |> maybeOptional "examples" (list value)
                     |> withType "string"
                     |> map String
                 , decode PreIntegerSchema
@@ -162,6 +175,7 @@ preSchemaDecoder =
                     |> maybeOptional "minimum" int
                     |> maybeOptional "maximum" int
                     |> maybeOptional "enum" (list int)
+                    |> maybeOptional "examples" (list value)
                     |> withType "integer"
                     |> map Integer
                 , decode PreNumberSchema
@@ -170,38 +184,45 @@ preSchemaDecoder =
                     |> maybeOptional "minimum" float
                     |> maybeOptional "maximum" float
                     |> maybeOptional "enum" (list float)
+                    |> maybeOptional "examples" (list value)
                     |> withType "number"
                     |> map Number
                 , decode PreBooleanSchema
                     |> maybeOptional "title" string
                     |> maybeOptional "description" string
                     |> maybeOptional "enum" (list bool)
+                    |> maybeOptional "examples" (list value)
                     |> withType "boolean"
                     |> map Boolean
                 , decode PreBaseSchema
                     |> maybeOptional "title" string
                     |> maybeOptional "description" string
+                    |> maybeOptional "examples" (list value)
                     |> withType "null"
                     |> map Null
                 , decode PreRefSchema
                     |> maybeOptional "title" string
                     |> maybeOptional "description" string
                     |> required "$ref" string
+                    |> maybeOptional "examples" (list value)
                     |> map Ref
                 , decode PreBaseCombinatorSchema
                     |> maybeOptional "title" string
                     |> maybeOptional "description" string
                     |> required "oneOf" (list preSchemaDecoder)
+                    |> maybeOptional "examples" (list value)
                     |> map OneOf
                 , decode PreBaseCombinatorSchema
                     |> maybeOptional "title" string
                     |> maybeOptional "description" string
                     |> required "anyOf" (list preSchemaDecoder)
+                    |> maybeOptional "examples" (list value)
                     |> map AnyOf
                 , decode PreBaseCombinatorSchema
                     |> maybeOptional "title" string
                     |> maybeOptional "description" string
                     |> required "allOf" (list preSchemaDecoder)
+                    |> maybeOptional "examples" (list value)
                     |> map AllOf
                 , map Fallback value
                 ]
@@ -238,7 +259,7 @@ maybeOptional key decoder =
 toSchema : Definitions -> PreSchema -> Schema
 toSchema definitions preSchema =
     case preSchema of
-        Object { title, description, required, properties, minProperties, maxProperties } ->
+        Object { title, description, required, properties, examples, minProperties, maxProperties } ->
             let
                 requiredSet =
                     Set.fromList required
@@ -261,6 +282,7 @@ toSchema definitions preSchema =
                 , description = description
                 , minProperties = minProperties
                 , maxProperties = maxProperties
+                , examples = Nothing
                 }
 
         Array content ->
