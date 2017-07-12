@@ -224,9 +224,9 @@ properties properties schema =
 
 {-| `examples` keyword
 -}
-examples : List Encode.Value -> BaseSchemaProperty extras
-examples ex schema =
-    { schema | examples = Just ex }
+examples : (a -> Encode.Value) -> List a -> BaseSchemaProperty extras
+examples encoder ex schema =
+    { schema | examples = Just (List.map encoder ex) }
 
 
 {-| `minProperties` keyword
