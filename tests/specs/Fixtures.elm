@@ -116,6 +116,7 @@ refSchema =
         { title = Just "ref schema title"
         , description = Just "ref schema description"
         , ref = "refurl"
+        , examples = []
         }
 
 

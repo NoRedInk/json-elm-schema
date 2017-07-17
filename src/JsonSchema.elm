@@ -1,4 +1,4 @@
-module JsonSchema exposing (Schema, allOf, anyOf, array, boolean, customFormat, dateTime, description, email, enum, format, hostname, integer, ipv4, ipv6, items, lazy, maxItems, maxLength, maxProperties, maximum, minItems, minLength, minProperties, minimum, null, number, object, oneOf, optional, pattern, properties, required, string, title, uri)
+module JsonSchema exposing (Schema, allOf, anyOf, array, boolean, customFormat, dateTime, description, email, enum, examples, format, hostname, integer, ipv4, ipv6, items, lazy, maxItems, maxLength, maxProperties, maximum, minItems, minLength, minProperties, minimum, null, number, object, oneOf, optional, pattern, properties, required, string, title, uri)
 
 {-| This library allows you to write your json schema files in elm, preventing inadvertent errors.
 
@@ -15,7 +15,7 @@ module JsonSchema exposing (Schema, allOf, anyOf, array, boolean, customFormat, 
 
 # Keywords
 
-@docs title, description, enum, minimum, maximum, properties, items, minItems, maxItems, minLength, maxLength, pattern, format, minProperties, maxProperties
+@docs title, description, enum, examples, minimum, maximum, properties, items, minItems, maxItems, minLength, maxLength, pattern, format, minProperties, maxProperties
 
 
 # Property constructors
@@ -29,6 +29,7 @@ module JsonSchema exposing (Schema, allOf, anyOf, array, boolean, customFormat, 
 
 -}
 
+import Json.Encode as Encode
 import JsonSchema.Model exposing (..)
 
 
@@ -42,6 +43,7 @@ defaultBaseSchema : BaseSchema {}
 defaultBaseSchema =
     { title = Nothing
     , description = Nothing
+    , examples = []
     }
 
 
@@ -52,6 +54,7 @@ defaultObject =
     , properties = []
     , minProperties = Nothing
     , maxProperties = Nothing
+    , examples = []
     }
 
 
@@ -62,6 +65,7 @@ defaultArray =
     , items = Nothing
     , minItems = Nothing
     , maxItems = Nothing
+    , examples = []
     }
 
 
@@ -74,6 +78,7 @@ defaultString =
     , maxLength = Nothing
     , pattern = Nothing
     , format = Nothing
+    , examples = []
     }
 
 
@@ -84,6 +89,7 @@ defaultInteger =
     , enum = Nothing
     , minimum = Nothing
     , maximum = Nothing
+    , examples = []
     }
 
 
@@ -94,6 +100,7 @@ defaultNumber =
     , enum = Nothing
     , minimum = Nothing
     , maximum = Nothing
+    , examples = []
     }
 
 
@@ -102,6 +109,7 @@ defaultBoolean =
     { title = Nothing
     , description = Nothing
     , enum = Nothing
+    , examples = []
     }
 
 
@@ -110,6 +118,7 @@ defaultCombinatorSchema =
     { title = Nothing
     , description = Nothing
     , subSchemas = []
+    , examples = []
     }
 
 
@@ -211,6 +220,13 @@ maximum number schema =
 properties : List ObjectProperty -> ObjectSchemaProperty
 properties properties schema =
     { schema | properties = schema.properties ++ properties }
+
+
+{-| `examples` keyword
+-}
+examples : (a -> Encode.Value) -> List a -> BaseSchemaProperty extras
+examples encoder ex schema =
+    { schema | examples = List.map encoder ex }
 
 
 {-| `minProperties` keyword

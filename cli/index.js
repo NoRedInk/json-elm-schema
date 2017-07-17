@@ -6,7 +6,7 @@ var meow = require('meow')
 
 var cli = meow(`
     Usage
-      $ elm-json-scema <elm-schema-file>
+      $ elm-json-schema <elm-schema-file>
 `)
 
 if (!fs.existsSync('./elm-package.json')) {

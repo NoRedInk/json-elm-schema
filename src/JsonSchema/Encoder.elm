@@ -72,6 +72,14 @@ encodeValue schema =
         |> addDefinitions
 
 
+encodeExamples : List Encode.Value -> Maybe ( String, Encode.Value )
+encodeExamples examples =
+    if List.isEmpty examples then
+        Nothing
+    else
+        Just ( "examples", Encode.list examples )
+
+
 encodeSubSchema : ThunkCache -> Schema -> Encode.Value
 encodeSubSchema cache schema =
     case schema of
@@ -83,6 +91,7 @@ encodeSubSchema cache schema =
             , Just ( "required", findRequiredFields objectSchema.properties )
             , Maybe.map ((,) "minProperties" << Encode.int) objectSchema.minProperties
             , Maybe.map ((,) "maxProperties" << Encode.int) objectSchema.maxProperties
+            , encodeExamples objectSchema.examples
             ]
                 |> Maybe.Extra.values
                 |> Encode.object
@@ -94,6 +103,7 @@ encodeSubSchema cache schema =
             , Maybe.map ((,) "items" << encodeSubSchema cache) arraySchema.items
             , Maybe.map ((,) "minItems" << Encode.int) arraySchema.minItems
             , Maybe.map ((,) "maxItems" << Encode.int) arraySchema.maxItems
+            , encodeExamples arraySchema.examples
             ]
                 |> Maybe.Extra.values
                 |> Encode.object
@@ -107,6 +117,7 @@ encodeSubSchema cache schema =
             , Maybe.map ((,) "maxLength" << Encode.int) stringSchema.maxLength
             , Maybe.map ((,) "pattern" << Encode.string) stringSchema.pattern
             , Maybe.map ((,) "format" << Encode.string << printFormat) stringSchema.format
+            , encodeExamples stringSchema.examples
             ]
                 |> Maybe.Extra.values
                 |> Encode.object
@@ -118,6 +129,7 @@ encodeSubSchema cache schema =
             , Maybe.map ((,) "enum" << Encode.list << List.map Encode.int) integerSchema.enum
             , Maybe.map ((,) "minimum" << Encode.int) integerSchema.minimum
             , Maybe.map ((,) "maximum" << Encode.int) integerSchema.maximum
+            , encodeExamples integerSchema.examples
             ]
                 |> Maybe.Extra.values
                 |> Encode.object
@@ -129,6 +141,7 @@ encodeSubSchema cache schema =
             , Maybe.map ((,) "enum" << Encode.list << List.map Encode.float) numberSchema.enum
             , Maybe.map ((,) "minimum" << Encode.float) numberSchema.minimum
             , Maybe.map ((,) "maximum" << Encode.float) numberSchema.maximum
+            , encodeExamples numberSchema.examples
             ]
                 |> Maybe.Extra.values
                 |> Encode.object
@@ -138,6 +151,7 @@ encodeSubSchema cache schema =
             , Maybe.map ((,) "title" << Encode.string) booleanSchema.title
             , Maybe.map ((,) "description" << Encode.string) booleanSchema.description
             , Maybe.map ((,) "enum" << Encode.list << List.map Encode.bool) booleanSchema.enum
+            , encodeExamples booleanSchema.examples
             ]
                 |> Maybe.Extra.values
                 |> Encode.object
@@ -146,6 +160,7 @@ encodeSubSchema cache schema =
             [ Just ( "$ref", Encode.string refSchema.ref )
             , Maybe.map ((,) "title" << Encode.string) refSchema.title
             , Maybe.map ((,) "description" << Encode.string) refSchema.description
+            , encodeExamples refSchema.examples
             ]
                 |> Maybe.Extra.values
                 |> Encode.object
@@ -154,6 +169,7 @@ encodeSubSchema cache schema =
             [ Just ( "type", Encode.string "null" )
             , Maybe.map ((,) "title" << Encode.string) nullSchema.title
             , Maybe.map ((,) "description" << Encode.string) nullSchema.description
+            , encodeExamples nullSchema.examples
             ]
                 |> Maybe.Extra.values
                 |> Encode.object
@@ -165,6 +181,7 @@ encodeSubSchema cache schema =
                 |> Encode.list
                 |> (,) "oneOf"
                 |> Just
+            , encodeExamples oneOfSchema.examples
             ]
                 |> Maybe.Extra.values
                 |> Encode.object
@@ -176,6 +193,7 @@ encodeSubSchema cache schema =
                 |> Encode.list
                 |> (,) "anyOf"
                 |> Just
+            , encodeExamples anyOfSchema.examples
             ]
                 |> Maybe.Extra.values
                 |> Encode.object
@@ -187,6 +205,7 @@ encodeSubSchema cache schema =
                 |> Encode.list
                 |> (,) "allOf"
                 |> Just
+            , encodeExamples allOfSchema.examples
             ]
                 |> Maybe.Extra.values
                 |> Encode.object
