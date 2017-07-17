@@ -43,7 +43,7 @@ defaultBaseSchema : BaseSchema {}
 defaultBaseSchema =
     { title = Nothing
     , description = Nothing
-    , examples = Nothing
+    , examples = []
     }
 
 
@@ -54,7 +54,7 @@ defaultObject =
     , properties = []
     , minProperties = Nothing
     , maxProperties = Nothing
-    , examples = Nothing
+    , examples = []
     }
 
 
@@ -65,7 +65,7 @@ defaultArray =
     , items = Nothing
     , minItems = Nothing
     , maxItems = Nothing
-    , examples = Nothing
+    , examples = []
     }
 
 
@@ -78,7 +78,7 @@ defaultString =
     , maxLength = Nothing
     , pattern = Nothing
     , format = Nothing
-    , examples = Nothing
+    , examples = []
     }
 
 
@@ -89,7 +89,7 @@ defaultInteger =
     , enum = Nothing
     , minimum = Nothing
     , maximum = Nothing
-    , examples = Nothing
+    , examples = []
     }
 
 
@@ -100,7 +100,7 @@ defaultNumber =
     , enum = Nothing
     , minimum = Nothing
     , maximum = Nothing
-    , examples = Nothing
+    , examples = []
     }
 
 
@@ -109,7 +109,7 @@ defaultBoolean =
     { title = Nothing
     , description = Nothing
     , enum = Nothing
-    , examples = Nothing
+    , examples = []
     }
 
 
@@ -118,7 +118,7 @@ defaultCombinatorSchema =
     { title = Nothing
     , description = Nothing
     , subSchemas = []
-    , examples = Nothing
+    , examples = []
     }
 
 
@@ -226,7 +226,7 @@ properties properties schema =
 -}
 examples : (a -> Encode.Value) -> List a -> BaseSchemaProperty extras
 examples encoder ex schema =
-    { schema | examples = Just (List.map encoder ex) }
+    { schema | examples = List.map encoder ex }
 
 
 {-| `minProperties` keyword

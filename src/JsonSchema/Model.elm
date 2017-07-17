@@ -24,7 +24,7 @@ type alias BaseSchema extras =
     { extras
         | title : Maybe String
         , description : Maybe String
-        , examples : Maybe (List Encode.Value)
+        , examples : List Encode.Value
     }
 
 
