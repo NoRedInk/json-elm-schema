@@ -27,6 +27,7 @@ arraySchema =
         , items <| string []
         , minItems 3
         , maxItems 6
+        , uniqueItems True
         ]
 
 

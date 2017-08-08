@@ -10,6 +10,7 @@ import Dict exposing (Dict)
 import Json.Decode exposing (..)
 import Json.Decode.Pipeline exposing (..)
 import Json.Encode as Encode
+import JsonSchema exposing (uniqueItems)
 import JsonSchema.Model as Model exposing (Schema)
 import Set
 
@@ -46,6 +47,7 @@ type alias PreArraySchema =
     , items : Maybe PreSchema
     , minItems : Maybe Int
     , maxItems : Maybe Int
+    , uniqueItems : Bool
     , examples : List Encode.Value
     }
 
@@ -155,6 +157,7 @@ preSchemaDecoder =
                     |> maybeOptional "items" preSchemaDecoder
                     |> maybeOptional "minItems" int
                     |> maybeOptional "maxItems" int
+                    |> optional "uniqueItems" bool False
                     |> optional "examples" (list value) []
                     |> withType "array"
                     |> map Array

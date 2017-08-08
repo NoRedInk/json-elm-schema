@@ -30,6 +30,7 @@ spec =
             , array [ items (string []) ]
             , array [ items (string []), minItems 5 ]
             , array [ items (string []), maxItems 10 ]
+            , array [ items (string []), uniqueItems False ] -- TODO: update array fuzzer
             , array [ items (string []), minItems 5, maxItems 10 ]
             ]
 

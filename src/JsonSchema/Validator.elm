@@ -10,11 +10,13 @@ It does not yet validate the `format` keyword.
 -}
 
 import Array
+import Set
 import Dict exposing (Dict)
 import Json.Decode exposing (..)
 import Json.Pointer
 import JsonSchema.Model exposing (..)
 import Regex
+import Json.Decode
 
 
 {-| The error type from a validation. It contains a JSON Pointer to where
@@ -34,6 +36,7 @@ type ErrorMessage
     | RequiredPropertyMissing String
     | HasFewerItemsThan Int
     | HasMoreItemsThan Int
+    | HasDuplicatedItems
     | IsLessThan Float
     | IsMoreThan Float
     | TooManyMatches
@@ -51,6 +54,7 @@ validateArray schema values =
     validateItems schema.items values
         ++ validateMinItems schema.minItems values
         ++ validateMaxItems schema.maxItems values
+        ++ validateUniqueItems schema.uniqueItems schema.items values
 
 
 validateItems : Maybe Schema -> Array.Array Value -> List Error
@@ -87,6 +91,37 @@ validateMaxItems int values =
                 []
             else
                 [ ( [], HasMoreItemsThan maxItems ) ]
+
+
+validateUniqueItems : Bool -> Maybe Schema -> Array.Array Value -> List Error
+validateUniqueItems unique item values =
+    if not unique then
+        []
+    else
+        case (Debug.log "items" item) of
+            Just ((String _) as itemSchema) ->
+                List.map
+                    (\v ->
+                        case Json.Decode.decodeValue Json.Decode.string v of
+                            Ok decoded ->
+                                decoded
+
+                            Err _ ->
+                                ""
+                    )
+                    (Array.toList values)
+                    |> Set.fromList
+                    |> Set.size
+                    |> ((==) (Array.length values))
+                    |> (\sameLength ->
+                            if sameLength then
+                                []
+                            else
+                                [ ( [], HasDuplicatedItems ) ]
+                       )
+
+            _ ->
+                []
 
 
 validateString : StringSchema -> String -> List Error
