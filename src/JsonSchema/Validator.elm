@@ -17,6 +17,7 @@ import Json.Pointer
 import JsonSchema.Model exposing (..)
 import Regex
 import Json.Decode
+import Json.Encode
 
 
 {-| The error type from a validation. It contains a JSON Pointer to where
@@ -98,30 +99,16 @@ validateUniqueItems unique item values =
     if not unique then
         []
     else
-        case (Debug.log "items" item) of
-            Just ((String _) as itemSchema) ->
-                List.map
-                    (\v ->
-                        case Json.Decode.decodeValue Json.Decode.string v of
-                            Ok decoded ->
-                                decoded
-
-                            Err _ ->
-                                ""
-                    )
-                    (Array.toList values)
-                    |> Set.fromList
-                    |> Set.size
-                    |> ((==) (Array.length values))
-                    |> (\sameLength ->
-                            if sameLength then
-                                []
-                            else
-                                [ ( [], HasDuplicatedItems ) ]
-                       )
-
-            _ ->
-                []
+        List.map (\v -> Json.Encode.encode 0 v) (Array.toList values)
+            |> Set.fromList
+            |> Set.size
+            |> ((==) (Array.length values))
+            |> (\sameLength ->
+                    if sameLength then
+                        []
+                    else
+                        [ ( [], HasDuplicatedItems ) ]
+               )
 
 
 validateString : StringSchema -> String -> List Error

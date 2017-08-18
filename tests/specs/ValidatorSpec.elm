@@ -109,12 +109,12 @@ arraySchemaSpec =
         , test "validate wrong item type" <|
             \() ->
                 Encode.list
-                    [ Encode.string "foo"
-                    , Encode.string "bar"
-                    , Encode.string "baz"
+                    [ Encode.string "foo1"
+                    , Encode.string "bar2"
+                    , Encode.string "baz3"
                     , Encode.int 1
-                    , Encode.string "bar"
-                    , Encode.string "baz"
+                    , Encode.string "bar4"
+                    , Encode.string "ba5"
                     ]
                     |> Validator.validate arraySchema
                     |> Expect.equal
