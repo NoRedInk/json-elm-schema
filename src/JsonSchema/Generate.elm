@@ -1,6 +1,7 @@
 module JsonSchema.Generate exposing (ElmDecoder(..), elmDecoderToString, generate, toElmDecoder)
 
-import JsonSchema.Model exposing (Schema(..))
+import Result.Extra
+import JsonSchema.Model exposing (ObjectProperty(..), Schema(..))
 
 
 generate : Schema -> Result String String
@@ -17,13 +18,28 @@ type ElmDecoder
     | JsonDecoder
     | NullDecoder
     | ArrayDecoder ElmDecoder
+    | ObjectDecoder (List ( String, Bool, ElmDecoder ))
 
 
 toElmDecoder : Schema -> Result String ElmDecoder
 toElmDecoder schema =
     case schema of
-        Object objectSchema ->
-            Debug.crash "TODO"
+        Object { properties } ->
+            let
+                toFieldDecoder : ObjectProperty -> Result String ( String, Bool, ElmDecoder )
+                toFieldDecoder property =
+                    case property of
+                        Required fieldName fieldSchema ->
+                            toElmDecoder fieldSchema
+                                |> Result.map ((,,) fieldName True)
+
+                        Optional fieldName fieldSchema ->
+                            toElmDecoder fieldSchema
+                                |> Result.map ((,,) fieldName False)
+            in
+                List.map toFieldDecoder properties
+                    |> Result.Extra.combine
+                    |> Result.map ObjectDecoder
 
         Array { items } ->
             -- TODO incorporate the extra info in the argument
@@ -94,3 +110,48 @@ elmDecoderToString decoder =
 
         ArrayDecoder decoder ->
             "(Json.Decode.list " ++ elmDecoderToString decoder ++ ")"
+
+        ObjectDecoder fieldDecoders ->
+            let
+                fieldNames : List String
+                fieldNames =
+                    List.map (\( fieldName, _, _ ) -> fieldName) fieldDecoders
+
+                initFn : String
+                initFn =
+                    [ "(\\"
+                    , (String.join " " fieldNames)
+                    , " -> { "
+                    , List.map fieldAssignment fieldNames |> String.join ", "
+                    , " })"
+                    ]
+                        |> String.concat
+
+                fieldAssignment : String -> String
+                fieldAssignment fieldName =
+                    fieldName ++ " = " ++ fieldName
+
+                pipeline : String
+                pipeline =
+                    List.map pipelineSegment fieldDecoders
+                        |> String.join " "
+
+                pipelineSegment : ( String, Bool, ElmDecoder ) -> String
+                pipelineSegment ( fieldName, required, fieldDecoder ) =
+                    if required then
+                        [ "|> required "
+                        , fieldName
+                        , " "
+                        , elmDecoderToString fieldDecoder
+                        ]
+                            |> String.concat
+                    else
+                        [ "|> optional "
+                        , fieldName
+                        , " (Json.Decode.map Just "
+                        , elmDecoderToString fieldDecoder
+                        , ") Nothing"
+                        ]
+                            |> String.concat
+            in
+                "(Decode.Pipeline.decode " ++ initFn ++ " " ++ pipeline ++ ")"

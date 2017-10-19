@@ -2,7 +2,6 @@ module Test.Generate exposing (..)
 
 import Expect
 import Fixtures
-import Json.Decode
 import JsonSchema exposing (Schema, array)
 import JsonSchema.Generate as Generate exposing (ElmDecoder(..), elmDecoderToString, toElmDecoder)
 import Test exposing (..)
@@ -35,9 +34,22 @@ testToElmDecoder =
                 array []
                     |> toElmDecoder
                     |> Expect.equal (Ok (ArrayDecoder JsonDecoder))
+        , test "object" <|
+            \() ->
+                Fixtures.objectSchema
+                    |> toElmDecoder
+                    |> Expect.equal
+                        (Ok
+                            (ObjectDecoder
+                                [ ( "firstName", False, StringDecoder )
+                                , ( "lastName", True, StringDecoder )
+                                ]
+                            )
+                        )
         ]
 
 
+testElmDecoderToString : Test
 testElmDecoderToString =
     describe "elmDecoderToString"
         [ test "String" <|
@@ -67,6 +79,15 @@ testElmDecoderToString =
                         |> elmDecoderToString
                         |> Expect.equal "(Json.Decode.list Json.Decode.string)"
             ]
+        , test "ObjectDecoder" <|
+            \() ->
+                (ObjectDecoder
+                    [ ( "firstName", False, StringDecoder )
+                    , ( "lastName", True, StringDecoder )
+                    ]
+                )
+                    |> elmDecoderToString
+                    |> Expect.equal "(Decode.Pipeline.decode (\\firstName lastName -> { firstName = firstName, lastName = lastName }) |> optional firstName (Json.Decode.map Just Json.Decode.string) Nothing |> required lastName Json.Decode.string)"
         ]
 
 
