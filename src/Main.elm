@@ -4,8 +4,8 @@ import Html exposing (..)
 import Html.Events exposing (onInput, onClick)
 import Platform exposing (Program)
 import Json.Decode
-import JsonSchema.Model as Schema exposing (Schema)
 import JsonSchema.Decoder
+import JsonSchema.Generate
 
 
 main : Program Never Model Msg
@@ -20,13 +20,13 @@ main =
 model : Model
 model =
     { rawSchema = ""
-    , schema = Err "Click generate to parse a json schema"
+    , generatedCode = Err "Click generate to parse a json schema"
     }
 
 
 type alias Model =
     { rawSchema : String
-    , schema : Result String Schema
+    , generatedCode : Result String String
     }
 
 
@@ -43,8 +43,9 @@ update msg model =
 
         Generate ->
             { model
-                | schema =
+                | generatedCode =
                     Json.Decode.decodeString JsonSchema.Decoder.decoder model.rawSchema
+                        |> Result.andThen JsonSchema.Generate.generate
             }
 
 
@@ -54,5 +55,11 @@ view model =
         [ h1 [] [ text "Generate a Decoder from a JSON schema!" ]
         , textarea [ onInput SetRawSchema ] []
         , button [ onClick Generate ] [ text "Generate!" ]
-        , section [] [ text (toString model.schema) ]
+        , h2 [] [ text "Generated Decoder" ]
+        , case model.generatedCode of
+            Err message ->
+                section [] [ text ("Error: " ++ message) ]
+
+            Ok generatedCode ->
+                code [] [ text generatedCode ]
         ]
