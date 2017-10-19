@@ -6,8 +6,18 @@ import JsonSchema.Model exposing (ObjectProperty(..), Schema(..))
 
 generate : Schema -> Result String String
 generate schema =
-    toElmDecoder schema
-        |> Result.map elmDecoderToString
+    let
+        wrapInModule : String -> String
+        wrapInModule generatedDecoder =
+            [ "module Decoder exposing (decoder)"
+            , "import Json.Decode"
+            , "import Decode.Pipeline"
+            , "decoder = " ++ generatedDecoder
+            ]
+                |> String.join "\n"
+    in
+        toElmDecoder schema
+            |> Result.map (elmDecoderToString >> wrapInModule)
 
 
 type ElmDecoder

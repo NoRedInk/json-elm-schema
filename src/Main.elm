@@ -61,5 +61,8 @@ view model =
                 section [] [ text ("Error: " ++ message) ]
 
             Ok generatedCode ->
-                code [] [ text generatedCode ]
+                code []
+                    (String.split "\n" generatedCode
+                        |> List.map (\line -> p [] [ text line ])
+                    )
         ]
