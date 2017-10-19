@@ -25,9 +25,12 @@ toElmDecoder schema =
         Object objectSchema ->
             Debug.crash "TODO"
 
-        Array arraySchema ->
+        Array { items } ->
             -- TODO incorporate the extra info in the argument
-            Ok (ArrayDecoder JsonDecoder)
+            items
+                |> Maybe.map toElmDecoder
+                |> Maybe.withDefault (Ok JsonDecoder)
+                |> Result.map ArrayDecoder
 
         String stringSchema ->
             -- TODO incorporate the extra info in the argument

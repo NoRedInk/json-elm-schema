@@ -3,7 +3,7 @@ module Test.Generate exposing (..)
 import Expect
 import Fixtures
 import Json.Decode
-import JsonSchema exposing (Schema)
+import JsonSchema exposing (Schema, array)
 import JsonSchema.Generate as Generate exposing (ElmDecoder(..), elmDecoderToString, toElmDecoder)
 import Test exposing (..)
 
@@ -25,9 +25,14 @@ testToElmDecoder =
                 Fixtures.numberSchema
                     |> toElmDecoder
                     |> Expect.equal (Ok FloatDecoder)
-        , test "array" <|
+        , test "array of strings" <|
             \() ->
                 Fixtures.arraySchema
+                    |> toElmDecoder
+                    |> Expect.equal (Ok (ArrayDecoder StringDecoder))
+        , test "array of json values" <|
+            \() ->
+                array []
                     |> toElmDecoder
                     |> Expect.equal (Ok (ArrayDecoder JsonDecoder))
         ]
@@ -50,11 +55,18 @@ testElmDecoderToString =
                 FloatDecoder
                     |> elmDecoderToString
                     |> Expect.equal "Json.Decode.float"
-        , test "ArrayDecoder" <|
-            \() ->
-                ArrayDecoder JsonDecoder
-                    |> elmDecoderToString
-                    |> Expect.equal "(Json.Decode.list Json.Decode.value)"
+        , describe "ArrayDecoder"
+            [ test "with raw json inside" <|
+                \() ->
+                    ArrayDecoder JsonDecoder
+                        |> elmDecoderToString
+                        |> Expect.equal "(Json.Decode.list Json.Decode.value)"
+            , test "with strings inside" <|
+                \() ->
+                    ArrayDecoder StringDecoder
+                        |> elmDecoderToString
+                        |> Expect.equal "(Json.Decode.list Json.Decode.string)"
+            ]
         ]
 
 
