@@ -84,7 +84,7 @@ elmDecoderToString decoder =
             "Json.Decode.bool"
 
         JsonDecoder ->
-            "Json.Decode.jsonDecoder"
+            "Json.Decode.value"
 
         NullDecoder ->
             "(Json.Decode.null ())"
