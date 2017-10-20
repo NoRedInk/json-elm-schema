@@ -3,53 +3,82 @@ module Test.Generate exposing (..)
 import Expect
 import Fixtures
 import JsonSchema exposing (Schema, array)
+import JsonSchema.Decoder exposing (PreSchema(..))
 import JsonSchema.Generate as Generate exposing (ElmDecoder(..), elmDecoderToString, toElmDecoder)
 import Test exposing (..)
+
+
+stringPreSchema =
+    String
+        { title = Just "string schema title"
+        , description = Just "string schema description"
+        , minLength = Just 2
+        , maxLength = Just 8
+        , format = Nothing
+        , enum = Nothing
+        , examples = []
+        , pattern = Just "^foo$"
+        }
 
 
 testToElmDecoder =
     describe "toElmDecoder"
         [ test "string" <|
             \() ->
-                Fixtures.stringSchema
+                stringPreSchema
                     |> toElmDecoder
                     |> Expect.equal (Ok StringDecoder)
         , test "int" <|
             \() ->
-                Fixtures.integerSchema
+                { title = Just "integer schema title"
+                , description = Just "integer schema description"
+                , minimum = Just 2
+                , maximum = Just 8
+                , enum = Nothing
+                , examples = []
+                }
+                    |> Integer
                     |> toElmDecoder
                     |> Expect.equal (Ok IntDecoder)
         , test "number" <|
             \() ->
-                Fixtures.numberSchema
+                { title = Just "number schema title"
+                , description = Just "number schema description"
+                , minimum = Just 2.5
+                , maximum = Just 8.3
+                , enum = Nothing
+                , examples = []
+                }
+                    |> Number
                     |> toElmDecoder
                     |> Expect.equal (Ok FloatDecoder)
         , test "array of strings" <|
             \() ->
-                Fixtures.arraySchema
+                { title = Just "array schema title"
+                , description = Just "array schema description"
+                , items = Just stringPreSchema
+                , minItems = Just 3
+                , maxItems = Just 6
+                , examples = []
+                }
+                    |> Array
                     |> toElmDecoder
                     |> Expect.equal (Ok (ArrayDecoder StringDecoder))
         , test "array of json values" <|
             \() ->
-                array []
+                { title = Just "array schema title"
+                , description = Just "array schema description"
+                , items = Nothing
+                , minItems = Just 3
+                , maxItems = Just 6
+                , examples = []
+                }
+                    |> Array
                     |> toElmDecoder
                     |> Expect.equal (Ok (ArrayDecoder JsonDecoder))
-        , test "object" <|
-            \() ->
-                Fixtures.objectSchema
-                    |> toElmDecoder
-                    |> Expect.equal
-                        (Ok
-                            (ObjectDecoder
-                                [ ( "firstName", False, StringDecoder )
-                                , ( "lastName", True, StringDecoder )
-                                ]
-                            )
-                        )
         ]
 
 
-testElmDecoderToString : Test
 testElmDecoderToString =
     describe "elmDecoderToString"
         [ test "String" <|
@@ -79,30 +108,4 @@ testElmDecoderToString =
                         |> elmDecoderToString
                         |> Expect.equal "(Json.Decode.list Json.Decode.string)"
             ]
-        , test "ObjectDecoder" <|
-            \() ->
-                (ObjectDecoder
-                    [ ( "firstName", False, StringDecoder )
-                    , ( "lastName", True, StringDecoder )
-                    ]
-                )
-                    |> elmDecoderToString
-                    |> Expect.equal "(Decode.Pipeline.decode (\\firstName lastName -> { firstName = firstName, lastName = lastName }) |> optional firstName (Json.Decode.map Just Json.Decode.string) Nothing |> required lastName Json.Decode.string)"
         ]
-
-
-
---
--- generateStringSchema : Fuzzer (List ( String -> Schema, ElmDecoder -> Expectation ))
--- generateStringSchema =
---     Fuzz.constant
---         [ --(title "string schema title", Expect.equal )
---           --, (description "string schema description", Expect.equal 5)
---           ( minLength 2, Expect.atLeast 2 )
---         , ( maxLength 8, Expect.atMost 8 )
---         , ( pattern "^foo$", Expect.equal 888 {- TODO -} )
---
---         -- should not be able to generate format since we already used pattern
---         , ( format dateTime, Expect.equal 5 {- TODO -} )
---         ]
---

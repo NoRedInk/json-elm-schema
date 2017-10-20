@@ -1,23 +1,27 @@
 module JsonSchema.Generate exposing (ElmDecoder(..), elmDecoderToString, generate, toElmDecoder)
 
+import Dict
+import JsonSchema.Decoder exposing (PreSchema(..))
+import JsonSchema.Model exposing (ObjectProperty(..))
 import Result.Extra
-import JsonSchema.Model exposing (ObjectProperty(..), Schema(..))
+import Set
 
 
-generate : Schema -> Result String String
+generate : PreSchema -> Result String String
 generate schema =
     let
         wrapInModule : String -> String
         wrapInModule generatedDecoder =
             [ "module Decoder exposing (decoder)"
+            , "\n"
             , "import Json.Decode"
             , "import Decode.Pipeline"
             , "decoder = " ++ generatedDecoder
             ]
                 |> String.join "\n"
     in
-        toElmDecoder schema
-            |> Result.map (elmDecoderToString >> wrapInModule)
+    toElmDecoder schema
+        |> Result.map (elmDecoderToString >> wrapInModule)
 
 
 type ElmDecoder
@@ -31,25 +35,24 @@ type ElmDecoder
     | ObjectDecoder (List ( String, Bool, ElmDecoder ))
 
 
-toElmDecoder : Schema -> Result String ElmDecoder
+toElmDecoder : PreSchema -> Result String ElmDecoder
 toElmDecoder schema =
     case schema of
-        Object { properties } ->
+        Object { properties, required } ->
             let
-                toFieldDecoder : ObjectProperty -> Result String ( String, Bool, ElmDecoder )
-                toFieldDecoder property =
-                    case property of
-                        Required fieldName fieldSchema ->
-                            toElmDecoder fieldSchema
-                                |> Result.map ((,,) fieldName True)
+                requiredFields =
+                    Set.fromList required
 
-                        Optional fieldName fieldSchema ->
-                            toElmDecoder fieldSchema
-                                |> Result.map ((,,) fieldName False)
+                toFieldDecoder : ( String, PreSchema ) -> Result String ( String, Bool, ElmDecoder )
+                toFieldDecoder ( fieldName, preSchema ) =
+                    toElmDecoder preSchema
+                        |> Result.map ((,,) fieldName (Set.member fieldName requiredFields))
             in
-                List.map toFieldDecoder properties
-                    |> Result.Extra.combine
-                    |> Result.map ObjectDecoder
+            properties
+                |> Dict.toList
+                |> List.map toFieldDecoder
+                |> Result.Extra.combine
+                |> Result.map ObjectDecoder
 
         Array { items } ->
             -- TODO incorporate the extra info in the argument
@@ -90,9 +93,6 @@ toElmDecoder schema =
         AllOf baseCombinatorSchema ->
             Debug.crash "TODO"
 
-        Lazy function ->
-            Debug.crash "TODO"
-
         Fallback valueDecodeJson ->
             Debug.crash "TODO"
 
@@ -130,7 +130,7 @@ elmDecoderToString decoder =
                 initFn : String
                 initFn =
                     [ "(\\"
-                    , (String.join " " fieldNames)
+                    , String.join " " fieldNames
                     , " -> { "
                     , List.map fieldAssignment fieldNames |> String.join ", "
                     , " })"
@@ -164,4 +164,4 @@ elmDecoderToString decoder =
                         ]
                             |> String.concat
             in
-                "(Decode.Pipeline.decode " ++ initFn ++ " " ++ pipeline ++ ")"
+            "(Decode.Pipeline.decode " ++ initFn ++ " " ++ pipeline ++ ")"

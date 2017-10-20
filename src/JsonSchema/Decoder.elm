@@ -1,8 +1,8 @@
-module JsonSchema.Decoder exposing (decoder)
+module JsonSchema.Decoder exposing (PreSchema(..), decoder, preSchemaDecoder)
 
 {-| Decoding a JSON Schema to an `JsonSchema.Schema`
 
-@docs decoder
+@docs decoder, preSchemaDecoder, PreSchema
 
 -}
 
@@ -14,6 +14,7 @@ import JsonSchema.Model as Model exposing (Schema)
 import Set
 
 
+{-| -}
 type PreSchema
     = Object PreObjectSchema
     | Array PreArraySchema
@@ -134,6 +135,7 @@ definitionsDecoder =
         |> map (Maybe.withDefault Dict.empty)
 
 
+{-| -}
 preSchemaDecoder : Decoder PreSchema
 preSchemaDecoder =
     lazy

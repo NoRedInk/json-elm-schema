@@ -1,11 +1,11 @@
 module Main exposing (..)
 
 import Html exposing (..)
-import Html.Events exposing (onInput, onClick)
-import Platform exposing (Program)
+import Html.Events exposing (onClick, onInput)
 import Json.Decode
 import JsonSchema.Decoder
 import JsonSchema.Generate
+import Platform exposing (Program)
 
 
 main : Program Never Model Msg
@@ -44,7 +44,7 @@ update msg model =
         Generate ->
             { model
                 | generatedCode =
-                    Json.Decode.decodeString JsonSchema.Decoder.decoder model.rawSchema
+                    Json.Decode.decodeString JsonSchema.Decoder.preSchemaDecoder model.rawSchema
                         |> Result.andThen JsonSchema.Generate.generate
             }
 
