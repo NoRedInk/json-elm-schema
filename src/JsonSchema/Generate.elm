@@ -1,10 +1,9 @@
 module JsonSchema.Generate exposing (ElmDecoder(..), elmDecoderToString, generate, toElmDecoder)
 
-import Dict
+import Dict exposing (Dict)
 import JsonSchema.Decoder exposing (PreSchema(..))
-import JsonSchema.Model exposing (ObjectProperty(..))
 import Result.Extra
-import Set
+import Set exposing (Set)
 
 
 generate : PreSchema -> Result String String
@@ -33,6 +32,19 @@ type ElmDecoder
     | NullDecoder
     | ArrayDecoder ElmDecoder
     | ObjectDecoder (List ( String, Bool, ElmDecoder ))
+
+
+type Type
+    = RecordType (Dict String Type)
+    | UnionType (Dict String Type)
+    | StringType
+    | IntType
+    | FloatType
+    | MaybeType Type
+    | ListType Type
+    | BoolType
+    | UnitType
+    | JsonValueType
 
 
 toElmDecoder : PreSchema -> Result String ElmDecoder
@@ -165,3 +177,59 @@ elmDecoderToString decoder =
                             |> String.concat
             in
             "(Decode.Pipeline.decode " ++ initFn ++ " " ++ pipeline ++ ")"
+
+
+toType : PreSchema -> Type
+toType preSchema =
+    case preSchema of
+        Object { properties, required } ->
+            let
+                requiredFields : Set String
+                requiredFields =
+                    Set.fromList required
+
+                typeOfProperty : String -> PreSchema -> Type
+                typeOfProperty fieldName fieldSchema =
+                    if Set.member fieldName requiredFields then
+                        toType fieldSchema
+                    else
+                        MaybeType (toType fieldSchema)
+            in
+            Dict.map typeOfProperty properties
+                |> RecordType
+
+        Array { items } ->
+            items
+                |> Maybe.map toType
+                |> Maybe.withDefault JsonValueType
+                |> ListType
+
+        String preStringSchema ->
+            StringType
+
+        Integer preIntegerSchema ->
+            IntType
+
+        Number preNumberSchema ->
+            FloatType
+
+        Boolean preBooleanSchema ->
+            BoolType
+
+        Null preBaseSchema ->
+            UnitType
+
+        Ref preRefSchema ->
+            Debug.crash "TODO"
+
+        OneOf preBaseCombinatorSchema ->
+            Debug.crash "TODO"
+
+        AnyOf preBaseCombinatorSchema ->
+            Debug.crash "TODO"
+
+        AllOf preBaseCombinatorSchema ->
+            Debug.crash "TODO"
+
+        Fallback value ->
+            Debug.crash "TODO"
