@@ -9,7 +9,6 @@ module JsonSchema.Decoder exposing (decoder)
 import Dict exposing (Dict)
 import Json.Decode exposing (..)
 import Json.Decode.Pipeline exposing (..)
-import Json.Encode as Encode
 import JsonSchema.Model as Model
 
 
