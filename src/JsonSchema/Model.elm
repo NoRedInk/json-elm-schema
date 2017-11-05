@@ -51,38 +51,55 @@ type alias WithEnumSchema primitive extras =
 
 
 type alias ObjectSchema definitions =
-    BaseSchema
-        { properties : List (ObjectProperty NoDefinitions)
-        , minProperties : Maybe Int
-        , maxProperties : Maybe Int
-        , definitions : definitions
-        }
+    { title : Maybe String
+    , description : Maybe String
+    , examples : List Encode.Value
+    , properties : List (ObjectProperty NoDefinitions)
+    , minProperties : Maybe Int
+    , maxProperties : Maybe Int
+    , definitions : definitions
+    }
 
 
 type alias ArraySchema definitions =
-    BaseSchema
-        { items : Maybe SubSchema
-        , minItems : Maybe Int
-        , maxItems : Maybe Int
-        , definitions : definitions
-        }
+    { title : Maybe String
+    , description : Maybe String
+    , examples : List Encode.Value
+    , items : Maybe SubSchema
+    , minItems : Maybe Int
+    , maxItems : Maybe Int
+    , definitions : definitions
+    }
 
 
 type alias BaseNumberSchema num =
-    WithEnumSchema num
-        (BaseSchema
-            { minimum : Maybe num
-            , maximum : Maybe num
-            }
-        )
+    { title : Maybe String
+    , description : Maybe String
+    , examples : List Encode.Value
+    , enum : Maybe (List num)
+    , minimum : Maybe num
+    , maximum : Maybe num
+    }
 
 
 type alias IntegerSchema =
-    BaseNumberSchema Int
+    { title : Maybe String
+    , description : Maybe String
+    , examples : List Encode.Value
+    , enum : Maybe (List Int)
+    , minimum : Maybe Int
+    , maximum : Maybe Int
+    }
 
 
 type alias NumberSchema =
-    BaseNumberSchema Float
+    { title : Maybe String
+    , description : Maybe String
+    , examples : List Encode.Value
+    , enum : Maybe (List Float)
+    , minimum : Maybe Float
+    , maximum : Maybe Float
+    }
 
 
 type ObjectProperty definitions
@@ -91,36 +108,48 @@ type ObjectProperty definitions
 
 
 type alias StringSchema =
-    WithEnumSchema String
-        (BaseSchema
-            { minLength : Maybe Int
-            , maxLength : Maybe Int
-            , pattern : Maybe String
-            , format : Maybe StringFormat
-            }
-        )
+    { title : Maybe String
+    , description : Maybe String
+    , examples : List Encode.Value
+    , enum : Maybe (List String)
+    , minLength : Maybe Int
+    , maxLength : Maybe Int
+    , pattern : Maybe String
+    , format : Maybe StringFormat
+    }
 
 
 type alias BooleanSchema =
-    WithEnumSchema Bool (BaseSchema {})
+    { title : Maybe String
+    , description : Maybe String
+    , examples : List Encode.Value
+    , enum : Maybe (List Bool)
+    }
 
 
 type alias NullSchema =
-    BaseSchema {}
+    { title : Maybe String
+    , description : Maybe String
+    , examples : List Encode.Value
+    }
 
 
 type alias RefSchema definitions =
-    BaseSchema
-        { ref : String
-        , definitions : definitions
-        }
+    { title : Maybe String
+    , description : Maybe String
+    , examples : List Encode.Value
+    , ref : String
+    , definitions : definitions
+    }
 
 
 type alias BaseCombinatorSchema definitions =
-    BaseSchema
-        { subSchemas : List SubSchema
-        , definitions : definitions
-        }
+    { title : Maybe String
+    , description : Maybe String
+    , examples : List Encode.Value
+    , subSchemas : List SubSchema
+    , definitions : definitions
+    }
 
 
 {-| One of the built-in string formats defined by the json schema specification,
