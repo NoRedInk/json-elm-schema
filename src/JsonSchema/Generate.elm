@@ -1,9 +1,10 @@
 module JsonSchema.Generate exposing (ElmDecoder(..), elmDecoderToString, generate, toElmDecoder)
 
+import Char
 import Dict exposing (Dict)
 import JsonSchema.Model exposing (..)
+import Regex exposing (Regex)
 import Result.Extra
-import Set exposing (Set)
 
 
 generate : Schema -> Result String String
@@ -32,6 +33,7 @@ type ElmDecoder
     | NullDecoder
     | ArrayDecoder ElmDecoder
     | ObjectDecoder (List ( String, Bool, ElmDecoder ))
+    | OtherDecoder String
 
 
 type Type
@@ -50,12 +52,12 @@ type Type
 toElmDecoder : Schema -> Result String ElmDecoder
 toElmDecoder schema =
     case toSubSchema schema of
-        ( _, subSchema ) ->
-            subSchemaToElmDecoder subSchema
+        ( definitions, subSchema ) ->
+            subSchemaToElmDecoder definitions subSchema
 
 
-subSchemaToElmDecoder : SubSchema -> Result String ElmDecoder
-subSchemaToElmDecoder schema =
+subSchemaToElmDecoder : Definitions -> SubSchema -> Result String ElmDecoder
+subSchemaToElmDecoder definitions schema =
     case schema of
         Object { properties } ->
             let
@@ -63,11 +65,11 @@ subSchemaToElmDecoder schema =
                 toFieldDecoder property =
                     case property of
                         Required fieldName propertySchema ->
-                            subSchemaToElmDecoder propertySchema
+                            subSchemaToElmDecoder definitions propertySchema
                                 |> Result.map ((,,) fieldName True)
 
                         Optional fieldName propertySchema ->
-                            subSchemaToElmDecoder propertySchema
+                            subSchemaToElmDecoder definitions propertySchema
                                 |> Result.map ((,,) fieldName False)
             in
             properties
@@ -78,7 +80,7 @@ subSchemaToElmDecoder schema =
         Array { items } ->
             -- TODO incorporate the extra info in the argument
             items
-                |> Maybe.map subSchemaToElmDecoder
+                |> Maybe.map (subSchemaToElmDecoder definitions)
                 |> Maybe.withDefault (Ok JsonDecoder)
                 |> Result.map ArrayDecoder
 
@@ -103,7 +105,7 @@ subSchemaToElmDecoder schema =
             Ok NullDecoder
 
         Ref refSchema ->
-            Debug.crash "TODO"
+            Ok (OtherDecoder <| asDecoderName refSchema.ref)
 
         OneOf baseCombinatorSchema ->
             Debug.crash "TODO"
@@ -187,9 +189,12 @@ elmDecoderToString decoder =
             in
             "(Decode.Pipeline.decode " ++ initFn ++ " " ++ pipeline ++ ")"
 
+        OtherDecoder name ->
+            name
 
-toType : SubSchema -> Type
-toType preSchema =
+
+toType : Definitions -> SubSchema -> Type
+toType definitions preSchema =
     case preSchema of
         Object { properties } ->
             let
@@ -197,10 +202,10 @@ toType preSchema =
                 typeOfProperty property =
                     case property of
                         Required fieldName fieldSchema ->
-                            ( fieldName, toType fieldSchema )
+                            ( fieldName, toType definitions fieldSchema )
 
                         Optional fieldName fieldSchema ->
-                            ( fieldName, MaybeType (toType fieldSchema) )
+                            ( fieldName, MaybeType (toType definitions fieldSchema) )
             in
             List.map typeOfProperty properties
                 |> Dict.fromList
@@ -208,7 +213,7 @@ toType preSchema =
 
         Array { items } ->
             items
-                |> Maybe.map toType
+                |> Maybe.map (toType definitions)
                 |> Maybe.withDefault JsonValueType
                 |> ListType
 
@@ -241,3 +246,30 @@ toType preSchema =
 
         Fallback value ->
             Debug.crash "TODO"
+
+
+asDecoderName : String -> String
+asDecoderName str =
+    asVarName str ++ "Decoder"
+
+
+separator : Regex
+separator =
+    Regex.regex "[^\\w]+(\\w)"
+
+
+asVarName : String -> String
+asVarName str =
+    let
+        replacer : Regex.Match -> String
+        replacer { submatches } =
+            List.head submatches
+                |> Maybe.andThen identity
+                |> Maybe.map String.toUpper
+                |> Maybe.withDefault ""
+    in
+    Regex.replace Regex.All separator replacer str
+        -- First character needs to be small
+        |> String.uncons
+        |> Maybe.map (Tuple.mapFirst Char.toLower >> uncurry String.cons)
+        |> Maybe.withDefault ""
