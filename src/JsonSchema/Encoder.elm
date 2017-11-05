@@ -12,6 +12,7 @@ import Json.Encode as Encode
 import JsonSchema.Model exposing (..)
 import JsonSchema.Util exposing (hash)
 import Maybe.Extra
+import Regex exposing (Regex)
 
 
 {-| Type of the encodeSchemaProgram.
@@ -50,26 +51,45 @@ encode schema =
 encodeValue : Schema -> Encode.Value
 encodeValue schema =
     let
-        cache : ThunkCache
-        cache =
-            findThunks schema Dict.empty
+        ( definitions, subSchema ) =
+            toSubSchema schema
 
-        definitions : Encode.Value
-        definitions =
-            Dict.toList cache
-                |> List.map (Tuple.mapSecond <| encodeSubSchema cache)
+        internalRefName : ( String, SubSchema ) -> Maybe ( String, SubSchema )
+        internalRefName ( refName, refSchema ) =
+            Regex.find Regex.All definitionName refName
+                |> List.head
+                |> Maybe.andThen firstSubmatch
+                |> Maybe.map (\internalRefName -> ( internalRefName, refSchema ))
+
+        definitionsValue : Encode.Value
+        definitionsValue =
+            Dict.toList definitions
+                |> List.filterMap internalRefName
+                |> List.map (Tuple.mapSecond encodeSubSchema)
                 |> Encode.object
 
         addDefinitions : Encode.Value -> Encode.Value
         addDefinitions schemaValue =
-            if Dict.isEmpty cache then
+            if Dict.isEmpty definitions then
                 schemaValue
             else
-                set "definitions" definitions schemaValue
+                set "definitions" definitionsValue schemaValue
     in
-    schema
-        |> encodeSubSchema cache
+    subSchema
+        |> encodeSubSchema
         |> addDefinitions
+
+
+firstSubmatch : Regex.Match -> Maybe String
+firstSubmatch match =
+    match.submatches
+        |> List.head
+        |> Maybe.andThen identity
+
+
+definitionName : Regex
+definitionName =
+    Regex.regex "#/definitions/(.+)"
 
 
 encodeExamples : List Encode.Value -> Maybe ( String, Encode.Value )
@@ -80,14 +100,14 @@ encodeExamples examples =
         Just ( "examples", Encode.list examples )
 
 
-encodeSubSchema : ThunkCache -> Schema -> Encode.Value
-encodeSubSchema cache schema =
+encodeSubSchema : SubSchema -> Encode.Value
+encodeSubSchema schema =
     case schema of
         Object objectSchema ->
             [ Just ( "type", Encode.string "object" )
             , Maybe.map ((,) "title" << Encode.string) objectSchema.title
             , Maybe.map ((,) "description" << Encode.string) objectSchema.description
-            , Just ( "properties", convertProperty cache objectSchema.properties )
+            , Just ( "properties", convertProperty objectSchema.properties )
             , Just ( "required", findRequiredFields objectSchema.properties )
             , Maybe.map ((,) "minProperties" << Encode.int) objectSchema.minProperties
             , Maybe.map ((,) "maxProperties" << Encode.int) objectSchema.maxProperties
@@ -100,7 +120,7 @@ encodeSubSchema cache schema =
             [ Just ( "type", Encode.string "array" )
             , Maybe.map ((,) "title" << Encode.string) arraySchema.title
             , Maybe.map ((,) "description" << Encode.string) arraySchema.description
-            , Maybe.map ((,) "items" << encodeSubSchema cache) arraySchema.items
+            , Maybe.map ((,) "items" << encodeSubSchema) arraySchema.items
             , Maybe.map ((,) "minItems" << Encode.int) arraySchema.minItems
             , Maybe.map ((,) "maxItems" << Encode.int) arraySchema.maxItems
             , encodeExamples arraySchema.examples
@@ -177,7 +197,7 @@ encodeSubSchema cache schema =
         OneOf oneOfSchema ->
             [ Maybe.map ((,) "title" << Encode.string) oneOfSchema.title
             , Maybe.map ((,) "description" << Encode.string) oneOfSchema.description
-            , List.map (encodeSubSchema cache) oneOfSchema.subSchemas
+            , List.map encodeSubSchema oneOfSchema.subSchemas
                 |> Encode.list
                 |> (,) "oneOf"
                 |> Just
@@ -189,7 +209,7 @@ encodeSubSchema cache schema =
         AnyOf anyOfSchema ->
             [ Maybe.map ((,) "title" << Encode.string) anyOfSchema.title
             , Maybe.map ((,) "description" << Encode.string) anyOfSchema.description
-            , List.map (encodeSubSchema cache) anyOfSchema.subSchemas
+            , List.map encodeSubSchema anyOfSchema.subSchemas
                 |> Encode.list
                 |> (,) "anyOf"
                 |> Just
@@ -201,17 +221,13 @@ encodeSubSchema cache schema =
         AllOf allOfSchema ->
             [ Maybe.map ((,) "title" << Encode.string) allOfSchema.title
             , Maybe.map ((,) "description" << Encode.string) allOfSchema.description
-            , List.map (encodeSubSchema cache) allOfSchema.subSchemas
+            , List.map encodeSubSchema allOfSchema.subSchemas
                 |> Encode.list
                 |> (,) "allOf"
                 |> Just
             , encodeExamples allOfSchema.examples
             ]
                 |> Maybe.Extra.values
-                |> Encode.object
-
-        Lazy thunk ->
-            [ ( "$ref", Encode.string <| "#/definitions/" ++ (hash <| thunk ()) ) ]
                 |> Encode.object
 
         Fallback value ->
@@ -222,51 +238,7 @@ type alias ThunkCache =
     Dict String Schema
 
 
-findThunks : Schema -> ThunkCache -> ThunkCache
-findThunks schema cache =
-    case schema of
-        Object { properties } ->
-            List.map getPropertySchema properties
-                |> List.foldr findThunks cache
-
-        Array { items } ->
-            Maybe.Extra.unwrap cache (flip findThunks cache) items
-
-        String _ ->
-            cache
-
-        Integer _ ->
-            cache
-
-        Number _ ->
-            cache
-
-        Boolean _ ->
-            cache
-
-        Null _ ->
-            cache
-
-        Ref _ ->
-            cache
-
-        OneOf { subSchemas } ->
-            List.foldr findThunks cache subSchemas
-
-        AnyOf { subSchemas } ->
-            List.foldr findThunks cache subSchemas
-
-        AllOf { subSchemas } ->
-            List.foldr findThunks cache subSchemas
-
-        Lazy thunk ->
-            thunkDict thunk cache
-
-        Fallback _ ->
-            cache
-
-
-getPropertySchema : ObjectProperty -> Schema
+getPropertySchema : ObjectProperty NoDefinitions -> SubSchema
 getPropertySchema property =
     case property of
         Required _ schema ->
@@ -276,41 +248,22 @@ getPropertySchema property =
             schema
 
 
-thunkDict : (() -> Schema) -> ThunkCache -> ThunkCache
-thunkDict thunk cache =
-    let
-        schema : Schema
-        schema =
-            thunk ()
-
-        key : String
-        key =
-            hash schema
-    in
-    if Dict.member key cache then
-        cache
-    else
-        cache
-            |> Dict.insert key schema
-            |> findThunks schema
-
-
-convertProperty : ThunkCache -> List ObjectProperty -> Encode.Value
-convertProperty cache properties =
+convertProperty : List (ObjectProperty NoDefinitions) -> Encode.Value
+convertProperty properties =
     properties
         |> List.map
             (\property ->
                 case property of
                     Required name schema ->
-                        ( name, encodeSubSchema cache schema )
+                        ( name, encodeSubSchema schema )
 
                     Optional name schema ->
-                        ( name, encodeSubSchema cache schema )
+                        ( name, encodeSubSchema schema )
             )
         |> Encode.object
 
 
-findRequiredFields : List ObjectProperty -> Encode.Value
+findRequiredFields : List (ObjectProperty definitions) -> Encode.Value
 findRequiredFields properties =
     properties
         |> List.map
