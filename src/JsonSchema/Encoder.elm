@@ -10,7 +10,6 @@ import Dict exposing (Dict)
 import Json.Decode as Decode
 import Json.Encode as Encode
 import JsonSchema.Model exposing (..)
-import JsonSchema.Util exposing (hash)
 import Maybe.Extra
 import Regex exposing (Regex)
 
