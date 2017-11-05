@@ -7,23 +7,23 @@ module JsonSchema.Decoder exposing (decoder)
 -}
 
 import Dict exposing (Dict)
-import Json.Decode exposing (..)
-import Json.Decode.Pipeline exposing (..)
-import JsonSchema.Model as Model
+import Json.Decode exposing (Decoder, andThen, bool, fail, field, float, int, keyValuePairs, lazy, list, map, map2, maybe, nullable, oneOf, string, succeed, value)
+import Json.Decode.Pipeline exposing (custom, decode, hardcoded, optional, required)
+import JsonSchema.Model exposing (..)
 
 
 type alias ObjectProperties =
-    List (Model.ObjectProperty Model.NoDefinitions)
+    List (ObjectProperty NoDefinitions)
 
 
 {-| Decoder for a JSON Schema
 -}
-decoder : Decoder Model.Schema
+decoder : Decoder Schema
 decoder =
-    map2 Model.fromSubSchema definitionsDecoder schemaDecoder
+    map2 fromSubSchema definitionsDecoder schemaDecoder
 
 
-definitionsDecoder : Decoder Model.Definitions
+definitionsDecoder : Decoder Definitions
 definitionsDecoder =
     field "definitions"
         (keyValuePairs schemaDecoder
@@ -33,12 +33,12 @@ definitionsDecoder =
         |> map (Maybe.withDefault Dict.empty)
 
 
-schemaDecoder : Decoder Model.SubSchema
+schemaDecoder : Decoder SubSchema
 schemaDecoder =
     lazy
         (\_ ->
             oneOf
-                [ decode Model.ObjectSchema
+                [ decode ObjectSchema
                     |> maybeOptional "title" string
                     |> maybeOptional "description" string
                     |> optional "examples" (list value) []
@@ -46,9 +46,9 @@ schemaDecoder =
                     |> maybeOptional "minProperties" int
                     |> maybeOptional "maxProperties" int
                     |> withType "object"
-                    |> hardcoded Model.NoDefinitions
-                    |> map Model.Object
-                , decode Model.ArraySchema
+                    |> hardcoded NoDefinitions
+                    |> map Object
+                , decode ArraySchema
                     |> maybeOptional "title" string
                     |> maybeOptional "description" string
                     |> optional "examples" (list value) []
@@ -56,9 +56,9 @@ schemaDecoder =
                     |> maybeOptional "minItems" int
                     |> maybeOptional "maxItems" int
                     |> withType "array"
-                    |> hardcoded Model.NoDefinitions
-                    |> map Model.Array
-                , decode Model.StringSchema
+                    |> hardcoded NoDefinitions
+                    |> map Array
+                , decode StringSchema
                     |> maybeOptional "title" string
                     |> maybeOptional "description" string
                     |> optional "examples" (list value) []
@@ -68,8 +68,8 @@ schemaDecoder =
                     |> maybeOptional "pattern" string
                     |> maybeOptional "format" (map stringFormat string)
                     |> withType "string"
-                    |> map Model.String
-                , decode Model.IntegerSchema
+                    |> map String
+                , decode IntegerSchema
                     |> maybeOptional "title" string
                     |> maybeOptional "description" string
                     |> optional "examples" (list value) []
@@ -77,8 +77,8 @@ schemaDecoder =
                     |> maybeOptional "minimum" int
                     |> maybeOptional "maximum" int
                     |> withType "integer"
-                    |> map Model.Integer
-                , decode Model.NumberSchema
+                    |> map Integer
+                , decode NumberSchema
                     |> maybeOptional "title" string
                     |> maybeOptional "description" string
                     |> optional "examples" (list value) []
@@ -86,49 +86,49 @@ schemaDecoder =
                     |> maybeOptional "minimum" float
                     |> maybeOptional "maximum" float
                     |> withType "number"
-                    |> map Model.Number
-                , decode Model.BooleanSchema
+                    |> map Number
+                , decode BooleanSchema
                     |> maybeOptional "title" string
                     |> maybeOptional "description" string
                     |> optional "examples" (list value) []
                     |> maybeOptional "enum" (list bool)
                     |> withType "boolean"
-                    |> map Model.Boolean
-                , decode Model.NullSchema
+                    |> map Boolean
+                , decode NullSchema
                     |> maybeOptional "title" string
                     |> maybeOptional "description" string
                     |> optional "examples" (list value) []
                     |> withType "null"
-                    |> map Model.Null
-                , decode Model.RefSchema
+                    |> map Null
+                , decode RefSchema
                     |> maybeOptional "title" string
                     |> maybeOptional "description" string
                     |> optional "examples" (list value) []
                     |> required "$ref" string
-                    |> hardcoded Model.NoDefinitions
-                    |> map Model.Ref
-                , decode Model.BaseCombinatorSchema
+                    |> hardcoded NoDefinitions
+                    |> map Ref
+                , decode BaseCombinatorSchema
                     |> maybeOptional "title" string
                     |> maybeOptional "description" string
                     |> optional "examples" (list value) []
                     |> required "oneOf" (list schemaDecoder)
-                    |> hardcoded Model.NoDefinitions
-                    |> map Model.OneOf
-                , decode Model.BaseCombinatorSchema
+                    |> hardcoded NoDefinitions
+                    |> map OneOf
+                , decode BaseCombinatorSchema
                     |> maybeOptional "title" string
                     |> maybeOptional "description" string
                     |> optional "examples" (list value) []
                     |> required "anyOf" (list schemaDecoder)
-                    |> hardcoded Model.NoDefinitions
-                    |> map Model.AnyOf
-                , decode Model.BaseCombinatorSchema
+                    |> hardcoded NoDefinitions
+                    |> map AnyOf
+                , decode BaseCombinatorSchema
                     |> maybeOptional "title" string
                     |> maybeOptional "description" string
                     |> optional "examples" (list value) []
                     |> required "allOf" (list schemaDecoder)
-                    |> hardcoded Model.NoDefinitions
-                    |> map Model.AllOf
-                , map Model.Fallback value
+                    |> hardcoded NoDefinitions
+                    |> map AllOf
+                , map Fallback value
                 ]
         )
 
@@ -140,15 +140,15 @@ objectPropertiesDecoder =
         |> optional "required" (list string) []
 
 
-toObjectProperties : List ( String, Model.SubSchema ) -> List String -> ObjectProperties
+toObjectProperties : List ( String, SubSchema ) -> List String -> ObjectProperties
 toObjectProperties propertyList required =
     let
-        toProperty : ( String, Model.SubSchema ) -> Model.ObjectProperty Model.NoDefinitions
+        toProperty : ( String, SubSchema ) -> ObjectProperty NoDefinitions
         toProperty ( name, propertySchema ) =
             if List.member name required then
-                Model.Required name propertySchema
+                Required name propertySchema
             else
-                Model.Optional name propertySchema
+                Optional name propertySchema
     in
     List.map toProperty propertyList
 
@@ -180,26 +180,26 @@ maybeOptional key decoder =
     optional key (nullable decoder) Nothing
 
 
-stringFormat : String -> Model.StringFormat
+stringFormat : String -> StringFormat
 stringFormat format =
     case format of
         "date-time" ->
-            Model.DateTime
+            DateTime
 
         "email" ->
-            Model.Email
+            Email
 
         "hostname" ->
-            Model.Hostname
+            Hostname
 
         "ipv4" ->
-            Model.Ipv4
+            Ipv4
 
         "ipv6" ->
-            Model.Ipv6
+            Ipv6
 
         "uri" ->
-            Model.Uri
+            Uri
 
         _ ->
-            Model.Custom format
+            Custom format
