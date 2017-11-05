@@ -461,26 +461,21 @@ allOfSpec =
         ]
 
 
-lazySchemaSpec : Test
-lazySchemaSpec =
-    let
-        key : String
-        key =
-            hash lazySchema
-    in
-    describe "lazy"
+internalRefSchemaSpec : Test
+internalRefSchemaSpec =
+    describe "internal ref"
         [ test "is turned into a ref" <|
             \() ->
-                encode lazySchema
+                encode internalRefSchema
                     |> expectAt
-                        [ "items", "$ref" ]
-                        ( Decode.string, "#/definitions/" ++ key )
+                        [ "$ref" ]
+                        ( Decode.string, "#/definitions/ref" )
         , test "can be found in the definitions group" <|
             \() ->
-                encode lazySchema
+                encode internalRefSchema
                     |> expectAt
-                        [ "definitions", key, "type" ]
-                        ( Decode.string, "array" )
+                        [ "definitions", "ref", "type" ]
+                        ( Decode.string, "string" )
         ]
 
 

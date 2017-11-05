@@ -432,7 +432,7 @@ oneOf props childSchemas =
 
         combiner : List SubSchema -> SubSchema
         combiner subSchemas =
-            AnyOf { base | subSchemas = subSchemas }
+            OneOf { base | subSchemas = subSchemas }
     in
     combine combiner childSchemas
 
@@ -448,7 +448,7 @@ allOf props childSchemas =
 
         combiner : List SubSchema -> SubSchema
         combiner subSchemas =
-            AnyOf { base | subSchemas = subSchemas }
+            AllOf { base | subSchemas = subSchemas }
     in
     combine combiner childSchemas
 
