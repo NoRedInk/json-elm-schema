@@ -134,3 +134,99 @@ type StringFormat
     | Ipv6
     | Uri
     | Custom String
+
+
+{-| Split a schema into its definitions and subschema components.
+-}
+toSubSchema : Schema -> ( Definitions, SubSchema )
+toSubSchema schema =
+    case schema of
+        Object objectSchema ->
+            ( objectSchema.definitions
+            , Object { objectSchema | definitions = NoDefinitions }
+            )
+
+        Array arraySchema ->
+            ( arraySchema.definitions
+            , Array { arraySchema | definitions = NoDefinitions }
+            )
+
+        String stringSchema ->
+            ( Dict.empty, String stringSchema )
+
+        Integer integerSchema ->
+            ( Dict.empty, Integer integerSchema )
+
+        Number numberSchema ->
+            ( Dict.empty, Number numberSchema )
+
+        Boolean booleanSchema ->
+            ( Dict.empty, Boolean booleanSchema )
+
+        Null nullSchema ->
+            ( Dict.empty, Null nullSchema )
+
+        Ref refSchema ->
+            ( refSchema.definitions
+            , Ref { refSchema | definitions = NoDefinitions }
+            )
+
+        OneOf oneOfSchema ->
+            ( oneOfSchema.definitions
+            , OneOf { oneOfSchema | definitions = NoDefinitions }
+            )
+
+        AnyOf anyOfSchema ->
+            ( anyOfSchema.definitions
+            , AnyOf { anyOfSchema | definitions = NoDefinitions }
+            )
+
+        AllOf allOfSchema ->
+            ( allOfSchema.definitions
+            , AllOf { allOfSchema | definitions = NoDefinitions }
+            )
+
+        Fallback fallbackSchema ->
+            ( Dict.empty, Fallback fallbackSchema )
+
+
+{-| Join a subschema with definitions to create a full schema.
+-}
+fromSubSchema : Definitions -> SubSchema -> Schema
+fromSubSchema definitions subSchema =
+    case subSchema of
+        Object objectSchema ->
+            Object { objectSchema | definitions = definitions }
+
+        Array arraySchema ->
+            Array { arraySchema | definitions = definitions }
+
+        String stringSchema ->
+            String stringSchema
+
+        Integer integerSchema ->
+            Integer integerSchema
+
+        Number numberSchema ->
+            Number numberSchema
+
+        Boolean booleanSchema ->
+            Boolean booleanSchema
+
+        Null nullSchema ->
+            Null nullSchema
+
+        Ref refSchema ->
+            Ref { refSchema | definitions = definitions }
+
+        OneOf oneOfSchema ->
+            OneOf { oneOfSchema | definitions = definitions }
+
+        AnyOf anyOfSchema ->
+            AnyOf { anyOfSchema | definitions = definitions }
+
+        AllOf allOfSchema ->
+            AllOf { allOfSchema | definitions = definitions }
+
+        Fallback fallbackSchema ->
+            Fallback fallbackSchema
