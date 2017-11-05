@@ -150,7 +150,10 @@ toObjectProperties propertyList required =
             else
                 Optional name propertySchema
     in
-    List.map toProperty propertyList
+    -- keyValuePairs seems to return JSON (key, value) pairs in reverse order.
+    -- This is still the same JSON sementically (keys are unordered), but we'd
+    -- Prefer a decode -> encode cycle not to change the JSON in any way.
+    List.map toProperty (List.reverse propertyList)
 
 
 {-| Ensure a decoder has a specific "type" value.

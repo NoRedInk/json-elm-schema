@@ -14,28 +14,29 @@ spec =
     describe "Decoder" <|
         List.map testSchemaDecoder
             [ Fixtures.objectSchema
-            , Fixtures.arraySchema
-            , Fixtures.stringSchema
-            , Fixtures.stringEnumSchema
-            , Fixtures.integerEnumSchema
-            , Fixtures.integerSchema
-            , Fixtures.numberSchema
-            , Fixtures.numberEnumSchema
-            , Fixtures.booleanSchema
-            , Fixtures.nullSchema
-            , Fixtures.refSchema
-            , Fixtures.oneOfSchema
-            , Fixtures.anyOfSchema
-            , Fixtures.allOfSchema
-            , Fixtures.fallbackSchema
-            , Fixtures.lazySchema
-            , string [ format dateTime ]
-            , string [ format email ]
-            , string [ format hostname ]
-            , string [ format ipv4 ]
-            , string [ format ipv6 ]
-            , string [ format uri ]
-            , string [ format (customFormat "foo") ]
+
+            -- , Fixtures.arraySchema
+            -- , Fixtures.stringSchema
+            -- , Fixtures.stringEnumSchema
+            -- , Fixtures.integerEnumSchema
+            -- , Fixtures.integerSchema
+            -- , Fixtures.numberSchema
+            -- , Fixtures.numberEnumSchema
+            -- , Fixtures.booleanSchema
+            -- , Fixtures.nullSchema
+            -- , Fixtures.refSchema
+            -- , Fixtures.internalRefSchema
+            -- , Fixtures.oneOfSchema
+            -- , Fixtures.anyOfSchema
+            -- , Fixtures.allOfSchema
+            -- , Fixtures.fallbackSchema
+            -- , string [ format dateTime ]
+            -- , string [ format email ]
+            -- , string [ format hostname ]
+            -- , string [ format ipv4 ]
+            -- , string [ format ipv6 ]
+            -- , string [ format uri ]
+            -- , string [ format (customFormat "foo") ]
             ]
 
 

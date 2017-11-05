@@ -1,5 +1,6 @@
 module Fixtures exposing (..)
 
+import Dict
 import Json.Encode as Encode
 import JsonSchema exposing (..)
 import JsonSchema.Model
@@ -117,6 +118,21 @@ refSchema =
         , description = Just "ref schema description"
         , ref = "refurl"
         , examples = []
+        , definitions = Dict.empty
+        }
+
+
+internalRefSchema : Schema
+internalRefSchema =
+    JsonSchema.Model.Ref
+        { title = Just "ref schema title"
+        , description = Just "ref schema description"
+        , ref = "#/definitions/ref"
+        , examples = []
+        , definitions =
+            Dict.singleton
+                "#/definitions/ref"
+                (JsonSchema.Model.toSubSchema stringSchema |> Tuple.second)
         }
 
 
@@ -145,13 +161,6 @@ allOfSchema =
         , description "allOf schema description"
         ]
         [ integer [], string [] ]
-
-
-lazySchema : Schema
-lazySchema =
-    array
-        [ items <| lazy (\_ -> lazySchema)
-        ]
 
 
 fallbackSchema : Schema
