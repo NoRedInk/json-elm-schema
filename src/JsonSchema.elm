@@ -1,4 +1,4 @@
-module JsonSchema exposing (Schema, allOf, anyOf, array, boolean, customFormat, dateTime, description, email, enum, examples, format, hostname, integer, ipv4, ipv6, items, maxItems, maxLength, maxProperties, maximum, minItems, minLength, minProperties, minimum, null, number, object, oneOf, optional, pattern, properties, required, string, title, uri)
+module JsonSchema exposing (Schema, allOf, anyOf, array, boolean, customFormat, dateTime, description, email, enum, examples, format, hostname, integer, ipv4, ipv6, items, maxItems, maxLength, maxProperties, maximum, minItems, minLength, minProperties, minimum, null, number, object, oneOf, optional, pattern, properties, recurse, required, string, title, uri)
 
 {-| This library allows you to write your json schema files in elm, preventing inadvertent errors.
 
@@ -26,6 +26,11 @@ module JsonSchema exposing (Schema, allOf, anyOf, array, boolean, customFormat, 
 # String formats
 
 @docs dateTime, email, hostname, ipv4, ipv6, uri, customFormat
+
+
+# Helpers
+
+@docs recurse
 
 -}
 
@@ -467,6 +472,42 @@ anyOf props childSchemas =
             AnyOf { base | subSchemas = subSchemas }
     in
     combine combiner childSchemas
+
+
+{-| Create a recursive schema.
+
+Pass the schema a unique name and a function that returns the recursive schema.
+The function is passed a reference to itself, which can be embeded anywhere in the returned schema.
+
+-}
+recurse : String -> (Schema -> Schema) -> Schema
+recurse name schemaCreator =
+    let
+        refName : String
+        refName =
+            "#/definitions/" ++ name
+
+        refSchema : Schema
+        refSchema =
+            Ref
+                { title = Nothing
+                , description = Nothing
+                , examples = []
+                , ref = refName
+                , definitions = Dict.empty
+                }
+
+        ( definitions, createdSchema ) =
+            schemaCreator refSchema
+                |> toSubSchema
+    in
+    Ref
+        { title = Nothing
+        , description = Nothing
+        , examples = []
+        , ref = refName
+        , definitions = Dict.insert refName createdSchema definitions
+        }
 
 
 splitDefinitions : ObjectProperty Definitions -> ( Definitions, ObjectProperty NoDefinitions )
