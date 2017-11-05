@@ -1,12 +1,12 @@
 module JsonSchema.Generate exposing (ElmDecoder(..), elmDecoderToString, generate, toElmDecoder)
 
 import Dict exposing (Dict)
-import JsonSchema.Decoder exposing (PreSchema(..))
+import JsonSchema.Model exposing (..)
 import Result.Extra
 import Set exposing (Set)
 
 
-generate : PreSchema -> Result String String
+generate : Schema -> Result String String
 generate schema =
     let
         wrapInModule : String -> String
@@ -47,21 +47,30 @@ type Type
     | JsonValueType
 
 
-toElmDecoder : PreSchema -> Result String ElmDecoder
+toElmDecoder : Schema -> Result String ElmDecoder
 toElmDecoder schema =
-    case schema of
-        Object { properties, required } ->
-            let
-                requiredFields =
-                    Set.fromList required
+    case toSubSchema schema of
+        ( _, subSchema ) ->
+            subSchemaToElmDecoder subSchema
 
-                toFieldDecoder : ( String, PreSchema ) -> Result String ( String, Bool, ElmDecoder )
-                toFieldDecoder ( fieldName, preSchema ) =
-                    toElmDecoder preSchema
-                        |> Result.map ((,,) fieldName (Set.member fieldName requiredFields))
+
+subSchemaToElmDecoder : SubSchema -> Result String ElmDecoder
+subSchemaToElmDecoder schema =
+    case schema of
+        Object { properties } ->
+            let
+                toFieldDecoder : ObjectProperty NoDefinitions -> Result String ( String, Bool, ElmDecoder )
+                toFieldDecoder property =
+                    case property of
+                        Required fieldName propertySchema ->
+                            subSchemaToElmDecoder propertySchema
+                                |> Result.map ((,,) fieldName True)
+
+                        Optional fieldName propertySchema ->
+                            subSchemaToElmDecoder propertySchema
+                                |> Result.map ((,,) fieldName False)
             in
             properties
-                |> Dict.toList
                 |> List.map toFieldDecoder
                 |> Result.Extra.combine
                 |> Result.map ObjectDecoder
@@ -69,7 +78,7 @@ toElmDecoder schema =
         Array { items } ->
             -- TODO incorporate the extra info in the argument
             items
-                |> Maybe.map toElmDecoder
+                |> Maybe.map subSchemaToElmDecoder
                 |> Maybe.withDefault (Ok JsonDecoder)
                 |> Result.map ArrayDecoder
 
@@ -179,23 +188,22 @@ elmDecoderToString decoder =
             "(Decode.Pipeline.decode " ++ initFn ++ " " ++ pipeline ++ ")"
 
 
-toType : PreSchema -> Type
+toType : SubSchema -> Type
 toType preSchema =
     case preSchema of
-        Object { properties, required } ->
+        Object { properties } ->
             let
-                requiredFields : Set String
-                requiredFields =
-                    Set.fromList required
+                typeOfProperty : ObjectProperty NoDefinitions -> ( String, Type )
+                typeOfProperty property =
+                    case property of
+                        Required fieldName fieldSchema ->
+                            ( fieldName, toType fieldSchema )
 
-                typeOfProperty : String -> PreSchema -> Type
-                typeOfProperty fieldName fieldSchema =
-                    if Set.member fieldName requiredFields then
-                        toType fieldSchema
-                    else
-                        MaybeType (toType fieldSchema)
+                        Optional fieldName fieldSchema ->
+                            ( fieldName, MaybeType (toType fieldSchema) )
             in
-            Dict.map typeOfProperty properties
+            List.map typeOfProperty properties
+                |> Dict.fromList
                 |> RecordType
 
         Array { items } ->
