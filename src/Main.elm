@@ -44,7 +44,7 @@ update msg model =
         Generate ->
             { model
                 | generatedCode =
-                    Json.Decode.decodeString JsonSchema.Decoder.preSchemaDecoder model.rawSchema
+                    Json.Decode.decodeString JsonSchema.Decoder.decoder model.rawSchema
                         |> Result.andThen JsonSchema.Generate.generate
             }
 
