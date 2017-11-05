@@ -1,4 +1,4 @@
-module JsonSchema.Generate exposing (ElmDecoder(..), elmDecoderToString, generate, toElmDecoder)
+module JsonSchema.Generate exposing (ElmDecoder(..), elmDecoderToString, generate, toElmDecoders)
 
 import Char
 import Dict exposing (Dict)
@@ -10,18 +10,18 @@ import Result.Extra
 generate : Schema -> Result String String
 generate schema =
     let
-        wrapInModule : String -> String
-        wrapInModule generatedDecoder =
+        wrapInModule : List String -> String
+        wrapInModule generatedDecoders =
             [ "module Decoder exposing (decoder)"
             , "\n"
             , "import Json.Decode"
             , "import Decode.Pipeline"
-            , "decoder = " ++ generatedDecoder
             ]
+                ++ generatedDecoders
                 |> String.join "\n"
     in
-    toElmDecoder schema
-        |> Result.map (elmDecoderToString >> wrapInModule)
+    toElmDecoders schema
+        |> Result.map (List.map (uncurry topLevelElmDecoderToString) >> wrapInModule)
 
 
 type ElmDecoder
@@ -49,11 +49,14 @@ type Type
     | JsonValueType
 
 
-toElmDecoder : Schema -> Result String ElmDecoder
-toElmDecoder schema =
+toElmDecoders : Schema -> Result String (List ( String, ElmDecoder ))
+toElmDecoders schema =
     case toSubSchema schema of
         ( definitions, subSchema ) ->
-            subSchemaToElmDecoder definitions subSchema
+            ( "", subSchema )
+                :: Dict.toList definitions
+                |> List.map (trySecond (subSchemaToElmDecoder definitions))
+                |> Result.Extra.combine
 
 
 subSchemaToElmDecoder : Definitions -> SubSchema -> Result String ElmDecoder
@@ -117,7 +120,17 @@ subSchemaToElmDecoder definitions schema =
             Debug.crash "TODO"
 
         Fallback valueDecodeJson ->
-            Debug.crash "TODO"
+            -- TODO incorporate the extra info in the argument
+            Ok JsonDecoder
+
+
+topLevelElmDecoderToString : String -> ElmDecoder -> String
+topLevelElmDecoderToString name decoder =
+    [ asDecoderName name
+    , " = "
+    , elmDecoderToString decoder
+    ]
+        |> String.concat
 
 
 elmDecoderToString : ElmDecoder -> String
@@ -250,7 +263,9 @@ toType definitions preSchema =
 
 asDecoderName : String -> String
 asDecoderName str =
-    asVarName str ++ "Decoder"
+    asVarName str
+        ++ "Decoder"
+        |> uncapitalize
 
 
 separator : Regex
@@ -270,6 +285,18 @@ asVarName str =
     in
     Regex.replace Regex.All separator replacer str
         -- First character needs to be small
+        |> uncapitalize
+
+
+uncapitalize : String -> String
+uncapitalize str =
+    str
         |> String.uncons
         |> Maybe.map (Tuple.mapFirst Char.toLower >> uncurry String.cons)
         |> Maybe.withDefault ""
+
+
+trySecond : (a -> Result e b) -> ( x, a ) -> Result e ( x, b )
+trySecond fn ( a, b ) =
+    fn b
+        |> Result.map ((,) a)
