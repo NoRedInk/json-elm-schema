@@ -1,23 +1,39 @@
 module JsonSchema.Model exposing (..)
 
+import Dict exposing (Dict)
 import Json.Decode
 import Json.Encode as Encode
 
 
-type Schema
-    = Object ObjectSchema
-    | Array ArraySchema
+type alias Schema =
+    SchemaTemplate Definitions
+
+
+type alias SubSchema =
+    SchemaTemplate NoDefinitions
+
+
+type SchemaTemplate definitions
+    = Object (ObjectSchema definitions)
+    | Array (ArraySchema definitions)
     | String StringSchema
     | Integer IntegerSchema
     | Number NumberSchema
     | Boolean BooleanSchema
     | Null NullSchema
-    | Ref RefSchema
-    | OneOf BaseCombinatorSchema
-    | AnyOf BaseCombinatorSchema
-    | AllOf BaseCombinatorSchema
-    | Lazy (() -> Schema)
+    | Ref (RefSchema definitions)
+    | OneOf (BaseCombinatorSchema definitions)
+    | AnyOf (BaseCombinatorSchema definitions)
+    | AllOf (BaseCombinatorSchema definitions)
     | Fallback Json.Decode.Value
+
+
+type alias Definitions =
+    Dict String SubSchema
+
+
+type NoDefinitions
+    = NoDefinitions
 
 
 type alias BaseSchema extras =
@@ -34,19 +50,21 @@ type alias WithEnumSchema primitive extras =
     }
 
 
-type alias ObjectSchema =
+type alias ObjectSchema definitions =
     BaseSchema
-        { properties : List ObjectProperty
+        { properties : List (ObjectProperty NoDefinitions)
         , minProperties : Maybe Int
         , maxProperties : Maybe Int
+        , definitions : definitions
         }
 
 
-type alias ArraySchema =
+type alias ArraySchema definitions =
     BaseSchema
-        { items : Maybe Schema
+        { items : Maybe SubSchema
         , minItems : Maybe Int
         , maxItems : Maybe Int
+        , definitions : definitions
         }
 
 
@@ -67,9 +85,9 @@ type alias NumberSchema =
     BaseNumberSchema Float
 
 
-type ObjectProperty
-    = Required String Schema
-    | Optional String Schema
+type ObjectProperty definitions
+    = Required String (SchemaTemplate definitions)
+    | Optional String (SchemaTemplate definitions)
 
 
 type alias StringSchema =
@@ -91,15 +109,17 @@ type alias NullSchema =
     BaseSchema {}
 
 
-type alias RefSchema =
+type alias RefSchema definitions =
     BaseSchema
         { ref : String
+        , definitions : definitions
         }
 
 
-type alias BaseCombinatorSchema =
+type alias BaseCombinatorSchema definitions =
     BaseSchema
-        { subSchemas : List Schema
+        { subSchemas : List SubSchema
+        , definitions : definitions
         }
 
 
