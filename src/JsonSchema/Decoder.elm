@@ -142,7 +142,15 @@ objectPropertiesDecoder =
 
 toObjectProperties : List ( String, Model.SubSchema ) -> List String -> ObjectProperties
 toObjectProperties propertyList required =
-    Debug.crash "TODO"
+    let
+        toProperty : ( String, Model.SubSchema ) -> Model.ObjectProperty Model.NoDefinitions
+        toProperty ( name, propertySchema ) =
+            if List.member name required then
+                Model.Required name propertySchema
+            else
+                Model.Optional name propertySchema
+    in
+    List.map toProperty propertyList
 
 
 {-| Ensure a decoder has a specific "type" value.
