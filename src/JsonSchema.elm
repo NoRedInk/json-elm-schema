@@ -1,4 +1,4 @@
-module JsonSchema exposing (Schema, allOf, anyOf, array, boolean, customFormat, dateTime, description, email, enum, examples, format, hostname, integer, ipv4, ipv6, items, lazy, maxItems, maxLength, maxProperties, maximum, minItems, minLength, minProperties, minimum, null, number, object, oneOf, optional, pattern, properties, required, string, title, uri)
+module JsonSchema exposing (Schema, allOf, anyOf, array, boolean, customFormat, dateTime, description, email, enum, examples, format, hostname, integer, ipv4, ipv6, items, maxItems, maxLength, maxProperties, maximum, minItems, minLength, minProperties, minimum, null, number, object, oneOf, optional, pattern, properties, recurse, required, string, title, uri)
 
 {-| This library allows you to write your json schema files in elm, preventing inadvertent errors.
 
@@ -10,7 +10,7 @@ module JsonSchema exposing (Schema, allOf, anyOf, array, boolean, customFormat, 
 
 # Schema types
 
-@docs object, array, string, integer, number, boolean, null, oneOf, allOf, anyOf, lazy
+@docs object, array, string, integer, number, boolean, null, oneOf, allOf, anyOf
 
 
 # Keywords
@@ -27,8 +27,14 @@ module JsonSchema exposing (Schema, allOf, anyOf, array, boolean, customFormat, 
 
 @docs dateTime, email, hostname, ipv4, ipv6, uri, customFormat
 
+
+# Helpers
+
+@docs recurse
+
 -}
 
+import Dict exposing (Dict)
 import Json.Encode as Encode
 import JsonSchema.Model exposing (..)
 
@@ -47,7 +53,7 @@ defaultBaseSchema =
     }
 
 
-defaultObject : ObjectSchema
+defaultObject : ObjectSchema Definitions
 defaultObject =
     { title = Nothing
     , description = Nothing
@@ -55,10 +61,11 @@ defaultObject =
     , minProperties = Nothing
     , maxProperties = Nothing
     , examples = []
+    , definitions = Dict.empty
     }
 
 
-defaultArray : ArraySchema
+defaultArray : ArraySchema Definitions
 defaultArray =
     { title = Nothing
     , description = Nothing
@@ -66,6 +73,7 @@ defaultArray =
     , minItems = Nothing
     , maxItems = Nothing
     , examples = []
+    , definitions = Dict.empty
     }
 
 
@@ -113,12 +121,13 @@ defaultBoolean =
     }
 
 
-defaultCombinatorSchema : BaseCombinatorSchema
+defaultCombinatorSchema : BaseCombinatorSchema NoDefinitions
 defaultCombinatorSchema =
     { title = Nothing
     , description = Nothing
     , subSchemas = []
     , examples = []
+    , definitions = NoDefinitions
     }
 
 
@@ -130,12 +139,12 @@ type alias WithEnumSchemaProperty primitive extras =
     WithEnumSchema primitive extras -> WithEnumSchema primitive extras
 
 
-type alias ObjectSchemaProperty =
-    ObjectSchema -> ObjectSchema
+type alias ObjectSchemaProperty definitions =
+    ObjectSchema definitions -> ObjectSchema definitions
 
 
-type alias ArraySchemaProperty =
-    ArraySchema -> ArraySchema
+type alias ArraySchemaProperty definitions =
+    ArraySchema definitions -> ArraySchema definitions
 
 
 type alias StringSchemaProperty =
@@ -162,20 +171,20 @@ type alias NullSchemaProperty =
     NullSchema -> NullSchema
 
 
-type alias BaseCombinatorSchemaProperty =
-    BaseCombinatorSchema -> BaseCombinatorSchema
+type alias BaseCombinatorSchemaProperty definitions =
+    BaseCombinatorSchema definitions -> BaseCombinatorSchema definitions
 
 
 {-| Create a required property.
 -}
-required : String -> Schema -> ObjectProperty
+required : String -> Schema -> ObjectProperty Definitions
 required =
     Required
 
 
 {-| Create an optional property.
 -}
-optional : String -> Schema -> ObjectProperty
+optional : String -> Schema -> ObjectProperty Definitions
 optional =
     Optional
 
@@ -217,9 +226,21 @@ maximum number schema =
 
 {-| `properties` keyword
 -}
-properties : List ObjectProperty -> ObjectSchemaProperty
-properties properties schema =
-    { schema | properties = schema.properties ++ properties }
+properties : List (ObjectProperty Definitions) -> ObjectSchemaProperty Definitions
+properties definitionProperties schema =
+    List.map splitDefinitions definitionProperties
+        |> List.unzip
+        |> Tuple.mapFirst concatUnion
+        |> (\( definitions, properties ) ->
+                { schema
+                    | properties = schema.properties ++ properties
+                    , definitions = Dict.union schema.definitions definitions
+                }
+           )
+
+
+
+-- { schema | properties = schema.properties ++ properties }
 
 
 {-| `examples` keyword
@@ -231,35 +252,42 @@ examples encoder ex schema =
 
 {-| `minProperties` keyword
 -}
-minProperties : Int -> ObjectSchemaProperty
+minProperties : Int -> ObjectSchemaProperty definitions
 minProperties min schema =
     { schema | minProperties = Just min }
 
 
 {-| `maxProperties` keyword
 -}
-maxProperties : Int -> ObjectSchemaProperty
+maxProperties : Int -> ObjectSchemaProperty definitions
 maxProperties max schema =
     { schema | maxProperties = Just max }
 
 
 {-| `items` keyword
 -}
-items : Schema -> ArraySchemaProperty
-items items schema =
-    { schema | items = Just items }
+items : Schema -> ArraySchemaProperty Definitions
+items itemSchemaWithDefs schema =
+    let
+        ( definitions, itemSchema ) =
+            toSubSchema itemSchemaWithDefs
+    in
+    { schema
+        | items = Just itemSchema
+        , definitions = Dict.union schema.definitions definitions
+    }
 
 
 {-| `minItems` keyword
 -}
-minItems : Int -> ArraySchemaProperty
+minItems : Int -> ArraySchemaProperty definitions
 minItems min schema =
     { schema | minItems = Just min }
 
 
 {-| `maxItems` keyword
 -}
-maxItems : Int -> ArraySchemaProperty
+maxItems : Int -> ArraySchemaProperty definitions
 maxItems max schema =
     { schema | maxItems = Just max }
 
@@ -344,7 +372,7 @@ customFormat =
 
 {-| Create an object type schema.
 -}
-object : List ObjectSchemaProperty -> Schema
+object : List (ObjectSchemaProperty Definitions) -> Schema
 object props =
     List.foldl (<|) defaultObject props
         |> Object
@@ -352,7 +380,7 @@ object props =
 
 {-| Create an array type schema.
 -}
-array : List ArraySchemaProperty -> Schema
+array : List (ArraySchemaProperty Definitions) -> Schema
 array props =
     List.foldl (<|) defaultArray props
         |> Array
@@ -400,30 +428,109 @@ null props =
 
 {-| Create a oneOf type schema.
 -}
-oneOf : List BaseCombinatorSchemaProperty -> List Schema -> Schema
-oneOf props subSchemas =
-    List.foldl (<|) { defaultCombinatorSchema | subSchemas = subSchemas } props
-        |> OneOf
+oneOf : List (BaseCombinatorSchemaProperty NoDefinitions) -> List Schema -> Schema
+oneOf props childSchemas =
+    let
+        base : BaseCombinatorSchema NoDefinitions
+        base =
+            List.foldl (<|) defaultCombinatorSchema props
+
+        combiner : List SubSchema -> SubSchema
+        combiner subSchemas =
+            OneOf { base | subSchemas = subSchemas }
+    in
+    combine combiner childSchemas
 
 
 {-| Create an allOf type schema.
 -}
-allOf : List BaseCombinatorSchemaProperty -> List Schema -> Schema
-allOf props subSchemas =
-    List.foldl (<|) { defaultCombinatorSchema | subSchemas = subSchemas } props
-        |> AllOf
+allOf : List (BaseCombinatorSchemaProperty NoDefinitions) -> List Schema -> Schema
+allOf props childSchemas =
+    let
+        base : BaseCombinatorSchema NoDefinitions
+        base =
+            List.foldl (<|) defaultCombinatorSchema props
+
+        combiner : List SubSchema -> SubSchema
+        combiner subSchemas =
+            AllOf { base | subSchemas = subSchemas }
+    in
+    combine combiner childSchemas
 
 
 {-| Create an anyOf type schema.
 -}
-anyOf : List BaseCombinatorSchemaProperty -> List Schema -> Schema
-anyOf props subSchemas =
-    List.foldl (<|) { defaultCombinatorSchema | subSchemas = subSchemas } props
-        |> AnyOf
+anyOf : List (BaseCombinatorSchemaProperty NoDefinitions) -> List Schema -> Schema
+anyOf props childSchemas =
+    let
+        base : BaseCombinatorSchema NoDefinitions
+        base =
+            List.foldl (<|) defaultCombinatorSchema props
+
+        combiner : List SubSchema -> SubSchema
+        combiner subSchemas =
+            AnyOf { base | subSchemas = subSchemas }
+    in
+    combine combiner childSchemas
 
 
-{-| Create a lazy type schema.
+{-| Create a recursive schema.
+
+Pass the schema a unique name and a function that returns the recursive schema.
+The function is passed a reference to itself, which can be embeded anywhere in the returned schema.
+
 -}
-lazy : (() -> Schema) -> Schema
-lazy thunk =
-    Lazy thunk
+recurse : String -> (Schema -> Schema) -> Schema
+recurse name schemaCreator =
+    let
+        refName : String
+        refName =
+            "#/definitions/" ++ name
+
+        refSchema : Schema
+        refSchema =
+            Ref
+                { title = Nothing
+                , description = Nothing
+                , examples = []
+                , ref = refName
+                , definitions = Dict.empty
+                }
+
+        ( definitions, createdSchema ) =
+            schemaCreator refSchema
+                |> toSubSchema
+    in
+    Ref
+        { title = Nothing
+        , description = Nothing
+        , examples = []
+        , ref = refName
+        , definitions = Dict.insert refName createdSchema definitions
+        }
+
+
+splitDefinitions : ObjectProperty Definitions -> ( Definitions, ObjectProperty NoDefinitions )
+splitDefinitions objectProperty =
+    case objectProperty of
+        Required name schema ->
+            toSubSchema schema
+                |> Tuple.mapSecond (Required name)
+
+        Optional name schema ->
+            toSubSchema schema
+                |> Tuple.mapSecond (Optional name)
+
+
+combine : (List SubSchema -> SubSchema) -> List Schema -> Schema
+combine combiner schemas =
+    List.map toSubSchema schemas
+        |> List.unzip
+        |> Tuple.mapFirst concatUnion
+        |> Tuple.mapSecond combiner
+        |> uncurry fromSubSchema
+
+
+concatUnion : List (Dict comparable b) -> Dict comparable b
+concatUnion dicts =
+    List.foldl Dict.union Dict.empty dicts

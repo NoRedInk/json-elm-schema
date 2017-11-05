@@ -1,5 +1,6 @@
 module Fixtures exposing (..)
 
+import Dict
 import Json.Encode as Encode
 import JsonSchema exposing (..)
 import JsonSchema.Model
@@ -117,7 +118,18 @@ refSchema =
         , description = Just "ref schema description"
         , ref = "refurl"
         , examples = []
+        , definitions = Dict.empty
         }
+
+
+recursiveSchema : Schema
+recursiveSchema =
+    recurse "recursive"
+        (\ref ->
+            array
+                [ items ref
+                ]
+        )
 
 
 oneOfSchema : Schema
@@ -145,13 +157,6 @@ allOfSchema =
         , description "allOf schema description"
         ]
         [ integer [], string [] ]
-
-
-lazySchema : Schema
-lazySchema =
-    array
-        [ items <| lazy (\_ -> lazySchema)
-        ]
 
 
 fallbackSchema : Schema

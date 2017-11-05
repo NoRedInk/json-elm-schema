@@ -41,26 +41,34 @@ type ErrorMessage
     | DecodeError String
 
 
-validateObject : ObjectSchema -> Dict String Value -> List Error
-validateObject schema values =
-    List.concatMap (validateProperty values) schema.properties
+validateObject : ObjectSchema NoDefinitions -> Definitions -> Dict String Value -> List Error
+validateObject schema definitions values =
+    List.concatMap (validateProperty values definitions) schema.properties
 
 
-validateArray : ArraySchema -> Array.Array Value -> List Error
-validateArray schema values =
-    validateItems schema.items values
+validateArray : ArraySchema NoDefinitions -> Definitions -> Array.Array Value -> List Error
+validateArray schema definitions values =
+    validateItems schema.items definitions values
         ++ validateMinItems schema.minItems values
         ++ validateMaxItems schema.maxItems values
 
 
-validateItems : Maybe Schema -> Array.Array Value -> List Error
-validateItems items values =
+validateItems : Maybe SubSchema -> Definitions -> Array.Array Value -> List Error
+validateItems items definitions values =
     case items of
         Nothing ->
             []
 
         Just itemSchema ->
-            List.concat (List.indexedMap (\i v -> List.map (appendName (toString i)) (validate itemSchema v)) (Array.toList values))
+            List.concat
+                (List.indexedMap
+                    (\i v ->
+                        List.map
+                            (appendName (toString i))
+                            (validateSubSchema itemSchema definitions v)
+                    )
+                    (Array.toList values)
+                )
 
 
 validateMinItems : Maybe Int -> Array.Array Value -> List Error
@@ -149,8 +157,8 @@ validateEnum enum a =
                 [ ( [], NotInEnumeration ) ]
 
 
-validateProperty : Dict String Value -> ObjectProperty -> List Error
-validateProperty values property =
+validateProperty : Dict String Value -> Definitions -> ObjectProperty NoDefinitions -> List Error
+validateProperty values definitions property =
     case property of
         Required name schema ->
             case Dict.get name values of
@@ -158,7 +166,7 @@ validateProperty values property =
                     [ ( [], RequiredPropertyMissing name ) ]
 
                 Just value ->
-                    List.map (appendName name) (validate schema value)
+                    List.map (appendName name) (validateSubSchema schema definitions value)
 
         Optional name schema ->
             case Dict.get name values of
@@ -166,7 +174,7 @@ validateProperty values property =
                     []
 
                 Just value ->
-                    List.map (appendName name) (validate schema value)
+                    List.map (appendName name) (validateSubSchema schema definitions value)
 
 
 validateInteger : IntegerSchema -> Int -> List Error
@@ -218,15 +226,22 @@ It does not yet validate the `format` keyword.
 -}
 validate : Schema -> Value -> List Error
 validate schema v =
+    case toSubSchema schema of
+        ( definitions, subSchema ) ->
+            validateSubSchema subSchema definitions v
+
+
+validateSubSchema : SubSchema -> Definitions -> Value -> List Error
+validateSubSchema schema definitions v =
     case schema of
         Object objectSchema ->
             decodeValue (dict value) v
-                |> Result.map (validateObject objectSchema)
+                |> Result.map (validateObject objectSchema definitions)
                 |> getDecodeError
 
         Array arraySchema ->
             decodeValue (array value) v
-                |> Result.map (validateArray arraySchema)
+                |> Result.map (validateArray arraySchema definitions)
                 |> getDecodeError
 
         String stringSchema ->
@@ -255,7 +270,7 @@ validate schema v =
 
         OneOf oneOfSchema ->
             oneOfSchema.subSchemas
-                |> List.map (flip validate v)
+                |> List.map (\s -> validateSubSchema s definitions v)
                 |> List.filter (not << List.isEmpty)
                 |> List.length
                 |> (\i ->
@@ -272,7 +287,7 @@ validate schema v =
 
         AnyOf anyOfSchema ->
             anyOfSchema.subSchemas
-                |> List.map (flip validate v)
+                |> List.map (\s -> validateSubSchema s definitions v)
                 |> List.filter List.isEmpty
                 |> List.length
                 |> (\i ->
@@ -286,7 +301,7 @@ validate schema v =
 
         AllOf allOfSchema ->
             allOfSchema.subSchemas
-                |> List.map (flip validate v)
+                |> List.map (\s -> validateSubSchema s definitions v)
                 |> List.filter (not << List.isEmpty)
                 |> List.length
                 |> (\i ->
@@ -298,11 +313,13 @@ validate schema v =
                                 [ ( [], TooFewMatches ) ]
                    )
 
-        Ref _ ->
-            []
+        Ref refSchema ->
+            case Dict.get refSchema.ref definitions of
+                Just definition ->
+                    validateSubSchema definition definitions v
 
-        Lazy f ->
-            validate (f ()) v
+                Nothing ->
+                    []
 
         Fallback _ ->
             []

@@ -26,6 +26,13 @@ schemaString schema =
 -}
 schemaValue : Schema -> Fuzzer Value
 schemaValue schema =
+    case toSubSchema schema of
+        ( _, subSchema ) ->
+            subSchemaValue subSchema
+
+
+subSchemaValue : SubSchema -> Fuzzer Value
+subSchemaValue schema =
     case schema of
         Object objectSchema ->
             objectFuzzer objectSchema
@@ -62,14 +69,11 @@ schemaValue schema =
         AllOf allOfSchema ->
             Fuzz.invalid "Fuzzing an allOf schema is currently not supported"
 
-        Lazy thunk ->
-            Fuzz.invalid "Fuzzing a lazy schema is currently not supported"
-
         Fallback value ->
             Fuzz.invalid "Fuzzing a fallback schema is not supported"
 
 
-objectFuzzer : ObjectSchema -> Fuzzer Value
+objectFuzzer : ObjectSchema definitions -> Fuzzer Value
 objectFuzzer objectSchema =
     let
         unfuzzable =
@@ -84,20 +88,20 @@ objectFuzzer objectSchema =
             |> Fuzz.map (Maybe.Extra.values >> Encode.object)
 
 
-propertyFuzzer : ObjectProperty -> Fuzzer (Maybe ( String, Value ))
+propertyFuzzer : ObjectProperty NoDefinitions -> Fuzzer (Maybe ( String, Value ))
 propertyFuzzer objectProperty =
     case objectProperty of
         Required key subSchema ->
-            schemaValue subSchema
+            subSchemaValue subSchema
                 |> Fuzz.map ((,) key >> Just)
 
         Optional key subSchema ->
-            schemaValue subSchema
+            subSchemaValue subSchema
                 |> Fuzz.map ((,) key)
                 |> Fuzz.maybe
 
 
-arrayFuzzer : ArraySchema -> Fuzzer Value
+arrayFuzzer : ArraySchema definitions -> Fuzzer Value
 arrayFuzzer arraySchema =
     case ( arraySchema.items, arraySchema.minItems, arraySchema.maxItems ) of
         ( Nothing, _, _ ) ->
@@ -106,22 +110,22 @@ arrayFuzzer arraySchema =
                 |> Fuzz.map Encode.list
 
         ( Just subSchema, Nothing, Nothing ) ->
-            schemaValue subSchema
+            subSchemaValue subSchema
                 |> Fuzz.list
                 |> Fuzz.map Encode.list
 
         ( Just subSchema, Just minItems, Nothing ) ->
-            schemaValue subSchema
+            subSchemaValue subSchema
                 |> Fuzz.Extra.variableList minItems (minItems + 100)
                 |> Fuzz.map Encode.list
 
         ( Just subSchema, Nothing, Just maxItems ) ->
-            schemaValue subSchema
+            subSchemaValue subSchema
                 |> Fuzz.Extra.variableList 0 maxItems
                 |> Fuzz.map Encode.list
 
         ( Just subSchema, Just minItems, Just maxItems ) ->
-            schemaValue subSchema
+            subSchemaValue subSchema
                 |> Fuzz.Extra.variableList minItems maxItems
                 |> Fuzz.map Encode.list
 
@@ -235,8 +239,8 @@ nullFuzzer =
         |> Fuzz.constant
 
 
-anyOfFuzzer : BaseCombinatorSchema -> Fuzzer Value
+anyOfFuzzer : BaseCombinatorSchema definitions -> Fuzzer Value
 anyOfFuzzer anyOfSchema =
     anyOfSchema.subSchemas
-        |> List.map (schemaValue >> (,) 1)
+        |> List.map (subSchemaValue >> (,) 1)
         |> Fuzz.frequency

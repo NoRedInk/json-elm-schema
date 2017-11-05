@@ -3,6 +3,7 @@ module ValidatorSpec exposing (..)
 import Expect
 import Json.Encode as Encode
 import JsonSchema exposing (..)
+import JsonSchema.Model as Model
 import JsonSchema.Validator as Validator
 import Test exposing (..)
 
@@ -469,31 +470,35 @@ allOfSpec =
         ]
 
 
-lazySpec : Test
-lazySpec =
+recursiveSchemaSpec : Test
+recursiveSchemaSpec =
     let
-        lazySchema =
-            oneOf []
-                [ array
-                    [ items <| lazy (\_ -> lazySchema)
-                    ]
-                , integer [ maximum 2 ]
-                ]
+        recursiveSchema : Schema
+        recursiveSchema =
+            recurse "recursive"
+                (\ref ->
+                    oneOf []
+                        [ array
+                            [ items ref
+                            ]
+                        , integer [ maximum 2 ]
+                        ]
+                )
     in
     describe "lazy schema"
         [ test "validate valid 1" <|
             \() ->
                 Encode.list [ Encode.list [] ]
-                    |> Validator.validate lazySchema
+                    |> Validator.validate recursiveSchema
                     |> Expect.equal []
         , test "validate valid 2" <|
             \() ->
                 Encode.list [ Encode.list [ Encode.int 1 ] ]
-                    |> Validator.validate lazySchema
+                    |> Validator.validate recursiveSchema
                     |> Expect.equal []
         , test "validate invalid" <|
             \() ->
                 Encode.list [ Encode.list [ Encode.int 3 ] ]
-                    |> Validator.validate lazySchema
+                    |> Validator.validate recursiveSchema
                     |> Expect.equal [ ( [], Validator.TooFewMatches ) ]
         ]

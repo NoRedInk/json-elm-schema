@@ -24,11 +24,11 @@ spec =
             , Fixtures.booleanSchema
             , Fixtures.nullSchema
             , Fixtures.refSchema
+            , Fixtures.recursiveSchema
             , Fixtures.oneOfSchema
             , Fixtures.anyOfSchema
             , Fixtures.allOfSchema
             , Fixtures.fallbackSchema
-            , Fixtures.lazySchema
             , string [ format dateTime ]
             , string [ format email ]
             , string [ format hostname ]
