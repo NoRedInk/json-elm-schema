@@ -15,7 +15,7 @@ generate schema =
             [ "module Decoder exposing (decoder)"
             , ""
             , "import Json.Decode"
-            , "import Decode.Pipeline"
+            , "import Json.Decode.Pipeline"
             , ""
             , String.join "\n\n" generatedDecoders
             ]
@@ -186,14 +186,14 @@ elmDecoderToString decoder =
                 pipelineSegment : ( String, Bool, ElmDecoder ) -> String
                 pipelineSegment ( fieldName, required, fieldDecoder ) =
                     if required then
-                        [ "|> required \""
+                        [ "|> Json.Decode.Pipeline.required \""
                         , fieldName
                         , "\" "
                         , elmDecoderToString fieldDecoder
                         ]
                             |> String.concat
                     else
-                        [ "|> optional \""
+                        [ "|> Json.Decode.Pipeline.optional \""
                         , fieldName
                         , "\" (Json.Decode.map Just "
                         , elmDecoderToString fieldDecoder
@@ -201,7 +201,7 @@ elmDecoderToString decoder =
                         ]
                             |> String.concat
             in
-            "(Decode.Pipeline.decode " ++ initFn ++ " " ++ pipeline ++ ")"
+            "(Json.Decode.Pipeline.decode " ++ initFn ++ " " ++ pipeline ++ ")"
 
         OtherDecoder name ->
             name
