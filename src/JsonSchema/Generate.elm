@@ -13,11 +13,12 @@ generate schema =
         wrapInModule : List String -> String
         wrapInModule generatedDecoders =
             [ "module Decoder exposing (decoder)"
-            , "\n"
+            , ""
             , "import Json.Decode"
             , "import Decode.Pipeline"
+            , ""
+            , String.join "\n\n" generatedDecoders
             ]
-                ++ generatedDecoders
                 |> String.join "\n"
     in
     toElmDecoders schema

@@ -1,6 +1,7 @@
 module Main exposing (..)
 
 import Html exposing (..)
+import Html.Attributes exposing (cols, rows, value)
 import Html.Events exposing (onClick, onInput)
 import Json.Decode
 import JsonSchema.Decoder
@@ -53,7 +54,12 @@ view : Model -> Html Msg
 view model =
     section []
         [ h1 [] [ text "Generate a Decoder from a JSON schema!" ]
-        , textarea [ onInput SetRawSchema ] []
+        , textarea
+            [ onInput SetRawSchema
+            , cols 120
+            , rows 10
+            ]
+            []
         , button [ onClick Generate ] [ text "Generate!" ]
         , h2 [] [ text "Generated Decoder" ]
         , case model.generatedCode of
@@ -62,7 +68,15 @@ view model =
 
             Ok generatedCode ->
                 code []
-                    (String.split "\n" generatedCode
-                        |> List.map (\line -> p [] [ text line ])
-                    )
+                    [ textarea
+                        [ value generatedCode
+                        , cols 120
+                        , rows 10
+                        ]
+                        []
+                    ]
+
+        -- (String.split "\n" generatedCode
+        --     |> List.map (\line -> p [] [ text line ])
+        -- )
         ]
