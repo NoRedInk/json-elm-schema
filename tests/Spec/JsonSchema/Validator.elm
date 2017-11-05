@@ -1,4 +1,4 @@
-module ValidatorSpec exposing (..)
+module Spec.JsonSchema.Validator exposing (..)
 
 import Expect
 import Json.Encode as Encode

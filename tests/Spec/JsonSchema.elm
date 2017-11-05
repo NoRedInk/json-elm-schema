@@ -1,4 +1,4 @@
-module Tests exposing (..)
+module Spec.JsonSchema exposing (..)
 
 import Expect
 import Fixtures exposing (..)
@@ -6,7 +6,6 @@ import Helpers exposing (expectAt, expectEqualResult, lengthAt)
 import Json.Decode as Decode
 import JsonSchema exposing (..)
 import JsonSchema.Encoder exposing (encode, encodeValue)
-import JsonSchema.Util exposing (hash)
 import Test exposing (..)
 
 

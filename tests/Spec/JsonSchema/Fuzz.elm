@@ -1,4 +1,4 @@
-module SchemaFuzzSpec exposing (spec)
+module Spec.JsonSchema.Fuzz exposing (spec)
 
 import Expect exposing (pass)
 import JsonSchema exposing (..)

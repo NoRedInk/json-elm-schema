@@ -1,4 +1,4 @@
-module Test.Generate exposing (..)
+module Spec.JsonSchema.Generate exposing (..)
 
 import Expect
 import Fixtures

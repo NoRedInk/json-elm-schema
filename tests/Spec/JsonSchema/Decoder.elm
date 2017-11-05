@@ -1,4 +1,4 @@
-module DecoderSpec exposing (..)
+module Spec.JsonSchema.Decoder exposing (..)
 
 import Expect exposing (pass)
 import Fixtures
