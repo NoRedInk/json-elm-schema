@@ -461,21 +461,21 @@ allOfSpec =
         ]
 
 
-internalRefSchemaSpec : Test
-internalRefSchemaSpec =
+recursiveSchemaSpec : Test
+recursiveSchemaSpec =
     describe "internal ref"
         [ test "is turned into a ref" <|
             \() ->
-                encode internalRefSchema
+                encode recursiveSchema
                     |> expectAt
                         [ "$ref" ]
-                        ( Decode.string, "#/definitions/ref" )
+                        ( Decode.string, "#/definitions/recursive" )
         , test "can be found in the definitions group" <|
             \() ->
-                encode internalRefSchema
+                encode recursiveSchema
                     |> expectAt
-                        [ "definitions", "ref", "type" ]
-                        ( Decode.string, "string" )
+                        [ "definitions", "recursive", "type" ]
+                        ( Decode.string, "array" )
         ]
 
 

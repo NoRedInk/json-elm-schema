@@ -122,18 +122,14 @@ refSchema =
         }
 
 
-internalRefSchema : Schema
-internalRefSchema =
-    JsonSchema.Model.Ref
-        { title = Just "ref schema title"
-        , description = Just "ref schema description"
-        , ref = "#/definitions/ref"
-        , examples = []
-        , definitions =
-            Dict.singleton
-                "#/definitions/ref"
-                (JsonSchema.Model.toSubSchema stringSchema |> Tuple.second)
-        }
+recursiveSchema : Schema
+recursiveSchema =
+    recurse "recursive"
+        (\ref ->
+            array
+                [ items ref
+                ]
+        )
 
 
 oneOfSchema : Schema
