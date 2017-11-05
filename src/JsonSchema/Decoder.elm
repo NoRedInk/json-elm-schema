@@ -13,93 +13,6 @@ import Json.Encode as Encode
 import JsonSchema.Model as Model
 
 
-type alias ObjectSchema =
-    { title : Maybe String
-    , description : Maybe String
-    , properties : ObjectProperties
-    , minProperties : Maybe Int
-    , maxProperties : Maybe Int
-    , examples : List Encode.Value
-    , definitions : Model.NoDefinitions
-    }
-
-
-type alias ArraySchema =
-    { title : Maybe String
-    , description : Maybe String
-    , items : Maybe Model.SubSchema
-    , minItems : Maybe Int
-    , maxItems : Maybe Int
-    , examples : List Encode.Value
-    , definitions : Model.NoDefinitions
-    }
-
-
-type alias StringSchema =
-    { title : Maybe String
-    , description : Maybe String
-    , minLength : Maybe Int
-    , maxLength : Maybe Int
-    , pattern : Maybe String
-    , format : Maybe Model.StringFormat
-    , enum : Maybe (List String)
-    , examples : List Encode.Value
-    }
-
-
-type alias IntegerSchema =
-    { title : Maybe String
-    , description : Maybe String
-    , minimum : Maybe Int
-    , maximum : Maybe Int
-    , enum : Maybe (List Int)
-    , examples : List Encode.Value
-    }
-
-
-type alias NumberSchema =
-    { title : Maybe String
-    , description : Maybe String
-    , minimum : Maybe Float
-    , maximum : Maybe Float
-    , enum : Maybe (List Float)
-    , examples : List Encode.Value
-    }
-
-
-type alias BooleanSchema =
-    { title : Maybe String
-    , description : Maybe String
-    , enum : Maybe (List Bool)
-    , examples : List Encode.Value
-    }
-
-
-type alias BaseSchema =
-    { title : Maybe String
-    , description : Maybe String
-    , examples : List Encode.Value
-    }
-
-
-type alias RefSchema =
-    { title : Maybe String
-    , description : Maybe String
-    , ref : String
-    , examples : List Encode.Value
-    , definitions : Model.NoDefinitions
-    }
-
-
-type alias BaseCombinatorSchema =
-    { title : Maybe String
-    , description : Maybe String
-    , subSchemas : List Model.SubSchema
-    , examples : List Encode.Value
-    , definitions : Model.NoDefinitions
-    }
-
-
 type alias ObjectProperties =
     List (Model.ObjectProperty Model.NoDefinitions)
 
@@ -126,94 +39,94 @@ schemaDecoder =
     lazy
         (\_ ->
             oneOf
-                [ decode ObjectSchema
+                [ decode Model.ObjectSchema
                     |> maybeOptional "title" string
                     |> maybeOptional "description" string
+                    |> optional "examples" (list value) []
                     |> custom objectPropertiesDecoder
                     |> maybeOptional "minProperties" int
                     |> maybeOptional "maxProperties" int
-                    |> optional "examples" (list value) []
                     |> withType "object"
                     |> hardcoded Model.NoDefinitions
                     |> map Model.Object
-                , decode ArraySchema
+                , decode Model.ArraySchema
                     |> maybeOptional "title" string
                     |> maybeOptional "description" string
+                    |> optional "examples" (list value) []
                     |> maybeOptional "items" schemaDecoder
                     |> maybeOptional "minItems" int
                     |> maybeOptional "maxItems" int
-                    |> optional "examples" (list value) []
                     |> withType "array"
                     |> hardcoded Model.NoDefinitions
                     |> map Model.Array
-                , decode StringSchema
+                , decode Model.StringSchema
                     |> maybeOptional "title" string
                     |> maybeOptional "description" string
+                    |> optional "examples" (list value) []
+                    |> maybeOptional "enum" (list string)
                     |> maybeOptional "minLength" int
                     |> maybeOptional "maxLength" int
                     |> maybeOptional "pattern" string
                     |> maybeOptional "format" (map stringFormat string)
-                    |> maybeOptional "enum" (list string)
-                    |> optional "examples" (list value) []
                     |> withType "string"
                     |> map Model.String
-                , decode IntegerSchema
+                , decode Model.IntegerSchema
                     |> maybeOptional "title" string
                     |> maybeOptional "description" string
+                    |> optional "examples" (list value) []
+                    |> maybeOptional "enum" (list int)
                     |> maybeOptional "minimum" int
                     |> maybeOptional "maximum" int
-                    |> maybeOptional "enum" (list int)
-                    |> optional "examples" (list value) []
                     |> withType "integer"
                     |> map Model.Integer
-                , decode NumberSchema
+                , decode Model.NumberSchema
                     |> maybeOptional "title" string
                     |> maybeOptional "description" string
+                    |> optional "examples" (list value) []
+                    |> maybeOptional "enum" (list float)
                     |> maybeOptional "minimum" float
                     |> maybeOptional "maximum" float
-                    |> maybeOptional "enum" (list float)
-                    |> optional "examples" (list value) []
                     |> withType "number"
                     |> map Model.Number
-                , decode BooleanSchema
+                , decode Model.BooleanSchema
                     |> maybeOptional "title" string
                     |> maybeOptional "description" string
-                    |> maybeOptional "enum" (list bool)
                     |> optional "examples" (list value) []
+                    |> maybeOptional "enum" (list bool)
                     |> withType "boolean"
                     |> map Model.Boolean
-                , decode BaseSchema
+                , decode Model.NullSchema
                     |> maybeOptional "title" string
                     |> maybeOptional "description" string
                     |> optional "examples" (list value) []
                     |> withType "null"
                     |> map Model.Null
-                , decode RefSchema
+                , decode Model.RefSchema
                     |> maybeOptional "title" string
                     |> maybeOptional "description" string
-                    |> required "$ref" string
                     |> optional "examples" (list value) []
+                    |> required "$ref" string
                     |> hardcoded Model.NoDefinitions
                     |> map Model.Ref
-                , decode BaseCombinatorSchema
+                , decode Model.BaseCombinatorSchema
                     |> maybeOptional "title" string
                     |> maybeOptional "description" string
-                    |> required "oneOf" (list schemaDecoder)
                     |> optional "examples" (list value) []
+                    |> required "oneOf" (list schemaDecoder)
                     |> hardcoded Model.NoDefinitions
                     |> map Model.OneOf
-                , decode BaseCombinatorSchema
+                , decode Model.BaseCombinatorSchema
                     |> maybeOptional "title" string
                     |> maybeOptional "description" string
-                    |> required "anyOf" (list schemaDecoder)
                     |> optional "examples" (list value) []
+                    |> required "anyOf" (list schemaDecoder)
                     |> hardcoded Model.NoDefinitions
                     |> map Model.AnyOf
-                , decode BaseCombinatorSchema
+                , decode Model.BaseCombinatorSchema
                     |> maybeOptional "title" string
                     |> maybeOptional "description" string
-                    |> required "allOf" (list schemaDecoder)
                     |> optional "examples" (list value) []
+                    |> required "allOf" (list schemaDecoder)
                     |> hardcoded Model.NoDefinitions
                     |> map Model.AllOf
                 , map Model.Fallback value
