@@ -172,16 +172,16 @@ elmDecoderToString decoder =
                 pipelineSegment : ( String, Bool, ElmDecoder ) -> String
                 pipelineSegment ( fieldName, required, fieldDecoder ) =
                     if required then
-                        [ "|> required "
+                        [ "|> required \""
                         , fieldName
-                        , " "
+                        , "\" "
                         , elmDecoderToString fieldDecoder
                         ]
                             |> String.concat
                     else
-                        [ "|> optional "
+                        [ "|> optional \""
                         , fieldName
-                        , " (Json.Decode.map Just "
+                        , "\" (Json.Decode.map Just "
                         , elmDecoderToString fieldDecoder
                         , ") Nothing"
                         ]
