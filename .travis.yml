@@ -1,12 +1,12 @@
 install:
   - 'npm install -g elm@0.18.0 elm-test elm-verify-examples'
   - 'elm-package install --yes'
-  - 'pushd examples && elm-package install --yes && popd'
+  - 'pushd example && elm-package install --yes && popd'
 language: node_js
 node_js:
   - 6
 script:
   - elm-verify-examples
   - elm-test
-  - 'cd examples && elm-make Main.elm'
+  - 'cd example && elm-make Main.elm'
 sudo: false
