@@ -53,6 +53,12 @@ validateArray schema values =
         ++ validateMaxItems schema.maxItems values
 
 
+validateTuple : TupleSchema -> Array.Array Value -> List Error
+validateTuple schema values =
+    validateTupleItems schema.items values
+        ++ validateMinItems schema.minItems values
+        ++ validateMaxItems schema.maxItems values
+
 validateItems : Maybe Schema -> Array.Array Value -> List Error
 validateItems items values =
     case items of
@@ -61,6 +67,36 @@ validateItems items values =
 
         Just itemSchema ->
             List.concat (List.indexedMap (\i v -> List.map (appendName (toString i)) (validate itemSchema v)) (Array.toList values))
+
+validateTupleItems : Maybe (List Schema) -> Array.Array Value -> List Error
+validateTupleItems items values =
+    case items of
+        Nothing ->
+            []
+
+        Just itemSchemas ->
+            let
+                validateWithIndex i itemSchema v =
+                    validate itemSchema v
+                        |> List.map (appendName (toString i))
+            in
+
+                {-- Note: the spec doesn't specify what should happen if you
+                 have more schemas than values. If you have less schemas, it
+                 suggests the extra values won't be validated.
+                 
+                 http://json-schema.org/latest/json-schema-validation.html#rfc.section.6.4.1 
+                 
+                 In a strict world it should really be an error to have more
+                 schemas than values, but to go along with the general 
+                 permissiveness of JSON Schema, we just validate to the lowest 
+                 length.  --}
+
+                List.map3 validateWithIndex
+                    ( List.range 0 ((Array.length values) - 1))
+                    itemSchemas
+                    ( Array.toList values )
+                       |> List.concat
 
 
 validateMinItems : Maybe Int -> Array.Array Value -> List Error
@@ -227,6 +263,11 @@ validate schema v =
         Array arraySchema ->
             decodeValue (array value) v
                 |> Result.map (validateArray arraySchema)
+                |> getDecodeError
+
+        Tuple tupleSchema ->
+            decodeValue (array value) v
+                |> Result.map (validateTuple tupleSchema)
                 |> getDecodeError
 
         String stringSchema ->

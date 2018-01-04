@@ -108,6 +108,18 @@ encodeSubSchema cache schema =
                 |> Maybe.Extra.values
                 |> Encode.object
 
+        Tuple tupleSchema ->
+            [ Just ( "type", Encode.string "array" )
+            , Maybe.map ((,) "title" << Encode.string) tupleSchema.title
+            , Maybe.map ((,) "description" << Encode.string) tupleSchema.description
+            , Maybe.map ((,) "items" << Encode.list << List.map (encodeSubSchema cache)) tupleSchema.items
+            , Maybe.map ((,) "minItems" << Encode.int) tupleSchema.minItems
+            , Maybe.map ((,) "maxItems" << Encode.int) tupleSchema.maxItems
+            , encodeExamples tupleSchema.examples
+            ]
+                |> Maybe.Extra.values
+                |> Encode.object
+
         String stringSchema ->
             [ Just ( "type", Encode.string "string" )
             , Maybe.map ((,) "title" << Encode.string) stringSchema.title
@@ -231,6 +243,9 @@ findThunks schema cache =
 
         Array { items } ->
             Maybe.Extra.unwrap cache (flip findThunks cache) items
+
+        Tuple { items } ->
+            Maybe.Extra.unwrap cache (List.foldr findThunks cache) items
 
         String _ ->
             cache

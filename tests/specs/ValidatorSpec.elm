@@ -127,6 +127,70 @@ arraySchemaSpec =
         ]
 
 
+tupleSchemaSpec : Test
+tupleSchemaSpec =
+    let
+        tupleSchema : Schema
+        tupleSchema =
+            tuple
+                [ title "tuple schema title"
+                , description "tuple schema description"
+                , tupleItems [ string [], number [], string [ enum [ "a", "b" ] ] ]
+                , minItems 3
+                , maxItems 3
+                ]
+    in
+    describe "tuple schema"
+        [ test "validate valid" <|
+            \() ->
+                Encode.list [ Encode.string "foo", Encode.float 2.3, Encode.string "b" ]
+                    |> Validator.validate tupleSchema
+                    |> Expect.equal []
+        , test "validate too short" <|
+            \() ->
+                Encode.list [ Encode.string "foo", Encode.int 54 ]
+                    |> Validator.validate tupleSchema
+                    |> Expect.equal [ ( [], Validator.HasFewerItemsThan 3 ) ]
+        , test "validate too long" <|
+            \() ->
+                Encode.list
+                    [ Encode.string "foo"
+                    , Encode.int -1
+                    , Encode.string "a"
+                    , Encode.string "foo"
+                    ]
+                    |> Validator.validate tupleSchema
+                    |> Expect.equal [ ( [], Validator.HasMoreItemsThan 3 ) ]
+        , test "validate wrong item type" <|
+            \() ->
+                Encode.list
+                    [ Encode.string "foo"
+                    , Encode.string "bar"
+                    , Encode.string "b"
+                    ]
+                    |> Validator.validate tupleSchema
+                    |> Expect.equal
+                        [ ( [ "1" ]
+                          , Validator.DecodeError "Expecting a Float but instead got: \"bar\""
+                          )
+                        ]
+        , test "validate multiple errors" <|
+            \() ->
+                Encode.list
+                    [ Encode.string "foo"
+                    , Encode.int 1
+                    , Encode.string "c"
+                    , Encode.string "bar"
+                    ]
+                    |> Validator.validate tupleSchema
+                    |> Expect.equal
+                        [ ( [ "2" ], Validator.NotInEnumeration )
+                        , ( [], Validator.HasMoreItemsThan 3 )
+                        ]
+        ]
+
+
+
 stringSchemaSpec : Test
 stringSchemaSpec =
     let

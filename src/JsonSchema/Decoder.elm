@@ -17,6 +17,7 @@ import Set
 type PreSchema
     = Object PreObjectSchema
     | Array PreArraySchema
+    | Tuple PreTupleSchema
     | String PreStringSchema
     | Integer PreIntegerSchema
     | Number PreNumberSchema
@@ -49,6 +50,14 @@ type alias PreArraySchema =
     , examples : List Encode.Value
     }
 
+type alias PreTupleSchema =
+    { title : Maybe String
+    , description : Maybe String
+    , items : Maybe (List PreSchema)
+    , minItems : Maybe Int
+    , maxItems : Maybe Int
+    , examples : List Encode.Value
+    }
 
 type alias PreStringSchema =
     { title : Maybe String
@@ -158,6 +167,15 @@ preSchemaDecoder =
                     |> optional "examples" (list value) []
                     |> withType "array"
                     |> map Array
+                , decode PreTupleSchema
+                    |> maybeOptional "title" string
+                    |> maybeOptional "description" string
+                    |> maybeOptional "items" (list preSchemaDecoder)
+                    |> maybeOptional "minItems" int
+                    |> maybeOptional "maxItems" int
+                    |> optional "examples" (list value) []
+                    |> withType "array"
+                    |> map Tuple
                 , decode PreStringSchema
                     |> maybeOptional "title" string
                     |> maybeOptional "description" string
@@ -288,6 +306,10 @@ toSchema definitions preSchema =
         Array content ->
             Model.Array
                 { content | items = Maybe.map (toSchema definitions) content.items }
+
+        Tuple content ->
+            Model.Tuple
+                { content | items = Maybe.map (List.map (toSchema definitions)) content.items }
 
         String content ->
             Model.String

@@ -33,6 +33,10 @@ schemaValue schema =
         Array arraySchema ->
             arrayFuzzer arraySchema
 
+        Tuple tupleSchema ->
+            -- not sure this can be done easily since tuples are typed in Elm (?)
+            Fuzz.invalid "Fuzzing a tuple schema (array schema with list of items) is currently not supported"
+
         String stringSchema ->
             stringFuzzer stringSchema
 
