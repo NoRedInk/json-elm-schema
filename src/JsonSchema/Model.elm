@@ -55,6 +55,7 @@ type alias TupleSchema =
         { items : Maybe (List Schema)
         , minItems : Maybe Int
         , maxItems : Maybe Int
+        , additionalItems: Maybe Schema
         }
 
 

@@ -130,18 +130,41 @@ arrayFuzzer arraySchema =
 
 
 tupleFuzzer : TupleSchema -> Fuzzer Value
-tupleFuzzer tupleSchema =
-    -- TODO: Handle `additionalItems` property in some way
-    case tupleSchema.items of
-        Nothing ->
+tupleFuzzer { items, additionalItems, minItems, maxItems } =
+    
+    {-- Note: minItems and maxItems not used as constraints here. So it is
+    possible to generate an invalid value using this fuzzer, as shown by
+    the currently failing test. But the interplay between all possibilities
+    of these parameters is complex.  --}
+
+    let
+        fuzzItems_ schemas =
+            schemas
+                |> List.map schemaValue
+                |> Fuzz.Extra.sequence
+
+        fuzzAdditionalItems_ schema =
+            schemaValue schema
+                |> Fuzz.list
+    in
+    case ( items, additionalItems ) of
+        ( Nothing, Nothing ) ->
             Fuzz.constant []
                 |> Fuzz.map Encode.list
 
-        Just subSchemas ->
-            subSchemas
-                |> List.map schemaValue
-                |> Fuzz.Extra.sequence
+        ( Nothing, Just additionalItemsSchema ) ->
+            fuzzAdditionalItems_ additionalItemsSchema
                 |> Fuzz.map Encode.list
+
+        ( Just subSchemas, Nothing ) ->
+            fuzzItems_ subSchemas
+                |> Fuzz.map Encode.list
+
+        ( Just subSchemas, Just additionalItemsSchema ) ->
+            Fuzz.map2 List.append           
+                ( fuzzItems_ subSchemas )
+                ( fuzzAdditionalItems_ additionalItemsSchema ) 
+                  |> Fuzz.map Encode.list
 
 
 stringFuzzer : StringSchema -> Fuzzer Value

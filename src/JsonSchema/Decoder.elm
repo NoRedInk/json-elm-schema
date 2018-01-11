@@ -56,6 +56,7 @@ type alias PreTupleSchema =
     , items : Maybe (List PreSchema)
     , minItems : Maybe Int
     , maxItems : Maybe Int
+    , additionalItems : Maybe PreSchema
     , examples : List Encode.Value
     }
 
@@ -173,6 +174,7 @@ preSchemaDecoder =
                     |> maybeOptional "items" (list preSchemaDecoder)
                     |> maybeOptional "minItems" int
                     |> maybeOptional "maxItems" int
+                    |> maybeOptional "additionalItems" preSchemaDecoder
                     |> optional "examples" (list value) []
                     |> withType "array"
                     |> map Tuple
@@ -309,7 +311,10 @@ toSchema definitions preSchema =
 
         Tuple content ->
             Model.Tuple
-                { content | items = Maybe.map (List.map (toSchema definitions)) content.items }
+                { content 
+                    | items = Maybe.map (List.map (toSchema definitions)) content.items 
+                    , additionalItems = Maybe.map (toSchema definitions) content.additionalItems 
+                }
 
         String content ->
             Model.String

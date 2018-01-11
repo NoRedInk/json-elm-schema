@@ -1,4 +1,4 @@
-module JsonSchema exposing (Schema, allOf, anyOf, array, tuple, boolean, customFormat, dateTime, description, email, enum, examples, format, hostname, integer, ipv4, ipv6, items, tupleItems, lazy, maxItems, maxLength, maxProperties, maximum, minItems, minLength, minProperties, minimum, null, number, object, oneOf, optional, pattern, properties, required, string, title, uri)
+module JsonSchema exposing (Schema, additionalItems, allOf, anyOf, array, tuple, boolean, customFormat, dateTime, description, email, enum, examples, format, hostname, integer, ipv4, ipv6, items, lazy, maxItems, maxLength, maxProperties, maximum, minItems, minLength, minProperties, minimum, null, number, object, oneOf, optional, pattern, properties, required, string, title, tupleItems, uri)
 
 {-| This library allows you to write your json schema files in elm, preventing inadvertent errors.
 
@@ -15,7 +15,7 @@ module JsonSchema exposing (Schema, allOf, anyOf, array, tuple, boolean, customF
 
 # Keywords
 
-@docs title, description, enum, examples, minimum, maximum, properties, items, tupleItems, minItems, maxItems, minLength, maxLength, pattern, format, minProperties, maxProperties
+@docs title, description, enum, examples, minimum, maximum, properties, items, minItems, maxItems, tupleItems, additionalItems, minLength, maxLength, pattern, format, minProperties, maxProperties
 
 
 # Property constructors
@@ -76,6 +76,7 @@ defaultTuple =
     , items = Nothing
     , minItems = Nothing
     , maxItems = Nothing
+    , additionalItems = Nothing
     , examples = []
     }
 
@@ -265,13 +266,6 @@ items items schema =
     { schema | items = Just items }
 
 
-{-| `items` keyword for tuples (heretogeneous javascript arrays)
--}
-tupleItems : List Schema -> TupleSchemaProperty
-tupleItems items schema =
-    { schema | items = Just items }
-
-
 {-| `minItems` keyword
 -}
 minItems : Int -> { a | minItems : Maybe Int } -> { a | minItems : Maybe Int }
@@ -284,6 +278,20 @@ minItems min schema =
 maxItems : Int -> { a | maxItems : Maybe Int } -> { a | maxItems : Maybe Int }
 maxItems max schema =
     { schema | maxItems = Just max }
+
+
+{-| `items` keyword for tuples (heretogeneous javascript arrays)
+-}
+tupleItems : List Schema -> TupleSchemaProperty
+tupleItems items schema =
+    { schema | items = Just items }
+
+
+{-| `additionalItems` keyword for tuples
+-}
+additionalItems : Schema -> TupleSchemaProperty
+additionalItems additionalItems schema =
+    { schema | additionalItems = Just additionalItems }
 
 
 {-| `minLength` keyword

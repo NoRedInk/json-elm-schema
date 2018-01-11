@@ -115,6 +115,7 @@ encodeSubSchema cache schema =
             , Maybe.map ((,) "items" << Encode.list << List.map (encodeSubSchema cache)) tupleSchema.items
             , Maybe.map ((,) "minItems" << Encode.int) tupleSchema.minItems
             , Maybe.map ((,) "maxItems" << Encode.int) tupleSchema.maxItems
+            , Maybe.map ((,) "additionalItems" << encodeSubSchema cache) tupleSchema.additionalItems
             , encodeExamples tupleSchema.examples
             ]
                 |> Maybe.Extra.values
