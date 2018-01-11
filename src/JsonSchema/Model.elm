@@ -47,6 +47,7 @@ type alias ArraySchema =
         { items : Maybe Schema
         , minItems : Maybe Int
         , maxItems : Maybe Int
+        , uniqueItems : Bool
         }
 
 

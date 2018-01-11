@@ -103,6 +103,7 @@ encodeSubSchema cache schema =
             , Maybe.map ((,) "items" << encodeSubSchema cache) arraySchema.items
             , Maybe.map ((,) "minItems" << Encode.int) arraySchema.minItems
             , Maybe.map ((,) "maxItems" << Encode.int) arraySchema.maxItems
+            , Just ( "uniqueItems",  (Encode.bool arraySchema.uniqueItems))
             , encodeExamples arraySchema.examples
             ]
                 |> Maybe.Extra.values

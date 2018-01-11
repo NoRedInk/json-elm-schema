@@ -31,6 +31,10 @@ spec =
             , array [ items (string []), minItems 5 ]
             , array [ items (string []), maxItems 10 ]
             , array [ items (string []), minItems 5, maxItems 10 ]
+            , array [ items (string []), uniqueItems True ]
+            , array [ items (string []), uniqueItems True, minItems 3 ]
+            , array [ items (string []), uniqueItems True, maxItems 9 ]
+            , array [ items (string []), uniqueItems True, minItems 20, maxItems 20 ]
             ]
 
 

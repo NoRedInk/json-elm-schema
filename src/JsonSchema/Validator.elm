@@ -10,11 +10,14 @@ It does not yet validate the `format` keyword.
 -}
 
 import Array
+import Set
 import Dict exposing (Dict)
 import Json.Decode exposing (..)
 import Json.Pointer
 import JsonSchema.Model exposing (..)
 import Regex
+import Json.Decode
+import Json.Encode
 
 
 {-| The error type from a validation. It contains a JSON Pointer to where
@@ -34,6 +37,7 @@ type ErrorMessage
     | RequiredPropertyMissing String
     | HasFewerItemsThan Int
     | HasMoreItemsThan Int
+    | HasDuplicatedItems
     | IsLessThan Float
     | IsMoreThan Float
     | TooManyMatches
@@ -51,6 +55,7 @@ validateArray schema values =
     validateItems schema.items values
         ++ validateMinItems schema.minItems values
         ++ validateMaxItems schema.maxItems values
+        ++ validateUniqueItems schema.uniqueItems schema.items values
 
 
 validateItems : Maybe Schema -> Array.Array Value -> List Error
@@ -87,6 +92,23 @@ validateMaxItems int values =
                 []
             else
                 [ ( [], HasMoreItemsThan maxItems ) ]
+
+
+validateUniqueItems : Bool -> Maybe Schema -> Array.Array Value -> List Error
+validateUniqueItems unique item values =
+    if not unique then
+        []
+    else
+        List.map (\v -> Json.Encode.encode 0 v) (Array.toList values)
+            |> Set.fromList
+            |> Set.size
+            |> ((==) (Array.length values))
+            |> (\sameLength ->
+                    if sameLength then
+                        []
+                    else
+                        [ ( [], HasDuplicatedItems ) ]
+               )
 
 
 validateString : StringSchema -> String -> List Error

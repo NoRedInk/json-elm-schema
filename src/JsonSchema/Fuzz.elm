@@ -12,6 +12,8 @@ import Json.Encode as Encode exposing (Value)
 import JsonSchema.Model exposing (..)
 import Maybe.Extra
 import Random
+import Set
+import Json.Encode
 
 
 {-| Fuzzer that generates json strings.
@@ -76,12 +78,12 @@ objectFuzzer objectSchema =
             Maybe.Extra.isJust objectSchema.minProperties
                 || Maybe.Extra.isJust objectSchema.maxProperties
     in
-    if unfuzzable then
-        Fuzz.invalid "Fuzzing minProperties or maxProperties is currently not supported."
-    else
-        List.map propertyFuzzer objectSchema.properties
-            |> Fuzz.Extra.sequence
-            |> Fuzz.map (Maybe.Extra.values >> Encode.object)
+        if unfuzzable then
+            Fuzz.invalid "Fuzzing minProperties or maxProperties is currently not supported."
+        else
+            List.map propertyFuzzer objectSchema.properties
+                |> Fuzz.Extra.sequence
+                |> Fuzz.map (Maybe.Extra.values >> Encode.object)
 
 
 propertyFuzzer : ObjectProperty -> Fuzzer (Maybe ( String, Value ))
@@ -99,30 +101,54 @@ propertyFuzzer objectProperty =
 
 arrayFuzzer : ArraySchema -> Fuzzer Value
 arrayFuzzer arraySchema =
-    case ( arraySchema.items, arraySchema.minItems, arraySchema.maxItems ) of
-        ( Nothing, _, _ ) ->
+    case ( arraySchema.items, arraySchema.minItems, arraySchema.maxItems, arraySchema.uniqueItems ) of
+        ( Nothing, _, _, _ ) ->
             -- TODO: do something more interesting in the case the user hasn't defined a schema for the items.
             Fuzz.constant []
                 |> Fuzz.map Encode.list
 
-        ( Just subSchema, Nothing, Nothing ) ->
+        ( Just subSchema, Nothing, Nothing, False ) ->
             schemaValue subSchema
                 |> Fuzz.list
                 |> Fuzz.map Encode.list
 
-        ( Just subSchema, Just minItems, Nothing ) ->
+        ( Just subSchema, Nothing, Nothing, True ) ->
+            schemaValue subSchema
+                |> Fuzz.list
+                |> Fuzz.map (\lv -> List.map (Json.Encode.encode 0) lv |> Set.fromList |> Set.toList |> List.map Json.Encode.string)
+                |> Fuzz.map Encode.list
+
+        ( Just subSchema, Just minItems, Nothing, False ) ->
             schemaValue subSchema
                 |> Fuzz.Extra.variableList minItems (minItems + 100)
                 |> Fuzz.map Encode.list
 
-        ( Just subSchema, Nothing, Just maxItems ) ->
+        ( Just subSchema, Just minItems, Nothing, True ) ->
+            schemaValue subSchema
+                |> Fuzz.Extra.variableList minItems (minItems + 100)
+                |> Fuzz.map (\lv -> List.map (Json.Encode.encode 0) lv |> Set.fromList |> Set.toList |> List.map Json.Encode.string)
+                |> Fuzz.map Encode.list
+
+        ( Just subSchema, Nothing, Just maxItems, False ) ->
             schemaValue subSchema
                 |> Fuzz.Extra.variableList 0 maxItems
                 |> Fuzz.map Encode.list
 
-        ( Just subSchema, Just minItems, Just maxItems ) ->
+        ( Just subSchema, Nothing, Just maxItems, True ) ->
+            schemaValue subSchema
+                |> Fuzz.Extra.variableList 0 maxItems
+                |> Fuzz.map (\lv -> List.map (Json.Encode.encode 0) lv |> Set.fromList |> Set.toList |> List.map Json.Encode.string)
+                |> Fuzz.map Encode.list
+
+        ( Just subSchema, Just minItems, Just maxItems, False ) ->
             schemaValue subSchema
                 |> Fuzz.Extra.variableList minItems maxItems
+                |> Fuzz.map Encode.list
+
+        ( Just subSchema, Just minItems, Just maxItems, True ) ->
+            schemaValue subSchema
+                |> Fuzz.Extra.variableList minItems maxItems
+                |> Fuzz.map (\lv -> List.map (Json.Encode.encode 0) lv |> Set.fromList |> Set.toList |> List.map Json.Encode.string)
                 |> Fuzz.map Encode.list
 
 
@@ -153,17 +179,17 @@ stringFuzzer schema =
                 Just maxLength ->
                     String.slice 0 maxLength str
     in
-    case schema.enum of
-        Just enum ->
-            enum
-                |> Fuzz.Extra.oneOf
-                |> Fuzz.map Encode.string
+        case schema.enum of
+            Just enum ->
+                enum
+                    |> Fuzz.Extra.oneOf
+                    |> Fuzz.map Encode.string
 
-        Nothing ->
-            Fuzz.string
-                |> Fuzz.map expandIfTooShort
-                |> Fuzz.map cropIfTooLong
-                |> Fuzz.map Encode.string
+            Nothing ->
+                Fuzz.string
+                    |> Fuzz.map expandIfTooShort
+                    |> Fuzz.map cropIfTooLong
+                    |> Fuzz.map Encode.string
 
 
 numberFuzzer : NumberSchema -> Fuzzer Value

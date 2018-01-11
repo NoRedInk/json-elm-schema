@@ -69,6 +69,7 @@ arraySchemaSpec =
                 , items <| string []
                 , minItems 3
                 , maxItems 6
+                , uniqueItems True
                 ]
     in
     describe "array schema"
@@ -85,25 +86,35 @@ arraySchemaSpec =
         , test "validate too long" <|
             \() ->
                 Encode.list
-                    [ Encode.string "foo"
-                    , Encode.string "bar"
-                    , Encode.string "baz"
-                    , Encode.string "foo"
-                    , Encode.string "bar"
-                    , Encode.string "baz"
-                    , Encode.string "foo"
+                    [ Encode.string "foo1"
+                    , Encode.string "bar2"
+                    , Encode.string "baz3"
+                    , Encode.string "foo4"
+                    , Encode.string "bar5"
+                    , Encode.string "baz6"
+                    , Encode.string "foo7"
                     ]
                     |> Validator.validate arraySchema
                     |> Expect.equal [ ( [], Validator.HasMoreItemsThan 6 ) ]
+                , test "validate unique" <|
+            \() ->
+                Encode.list
+                    [ Encode.string "foobar"
+                    , Encode.string "foobar"
+                    , Encode.string "bar"
+
+                    ]
+                    |> Validator.validate arraySchema
+                    |> Expect.equal [ ( [], Validator.HasDuplicatedItems  ) ]
         , test "validate wrong item type" <|
             \() ->
                 Encode.list
-                    [ Encode.string "foo"
-                    , Encode.string "bar"
-                    , Encode.string "baz"
+                    [ Encode.string "foo1"
+                    , Encode.string "bar2"
+                    , Encode.string "baz3"
                     , Encode.int 1
-                    , Encode.string "bar"
-                    , Encode.string "baz"
+                    , Encode.string "bar4"
+                    , Encode.string "ba5"
                     ]
                     |> Validator.validate arraySchema
                     |> Expect.equal

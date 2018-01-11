@@ -107,6 +107,12 @@ arraySchemaSpec =
                     |> expectAt
                         [ "maxItems" ]
                         ( Decode.int, 6 )
+        , test "uniqueItems property contains nested schema" <|
+            \() ->
+                encode arraySchema
+                    |> expectAt
+                        [ "uniqueItems" ]
+                        ( Decode.bool, True )
         ]
 
 
