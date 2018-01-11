@@ -34,9 +34,8 @@ schemaValue schema =
             arrayFuzzer arraySchema
 
         Tuple tupleSchema ->
-            -- not sure this can be done easily since tuples are typed in Elm (?)
-            Fuzz.invalid "Fuzzing a tuple schema (array schema with list of items) is currently not supported"
-
+            tupleFuzzer tupleSchema
+            
         String stringSchema ->
             stringFuzzer stringSchema
 
@@ -127,6 +126,21 @@ arrayFuzzer arraySchema =
         ( Just subSchema, Just minItems, Just maxItems ) ->
             schemaValue subSchema
                 |> Fuzz.Extra.variableList minItems maxItems
+                |> Fuzz.map Encode.list
+
+
+tupleFuzzer : TupleSchema -> Fuzzer Value
+tupleFuzzer tupleSchema =
+    -- TODO: Handle `additionalItems` property in some way
+    case tupleSchema.items of
+        Nothing ->
+            Fuzz.constant []
+                |> Fuzz.map Encode.list
+
+        Just subSchemas ->
+            subSchemas
+                |> List.map schemaValue
+                |> Fuzz.Extra.sequence
                 |> Fuzz.map Encode.list
 
 

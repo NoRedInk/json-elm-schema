@@ -31,6 +31,7 @@ spec =
             , array [ items (string []), minItems 5 ]
             , array [ items (string []), maxItems 10 ]
             , array [ items (string []), minItems 5, maxItems 10 ]
+            , tuple [ tupleItems [ string [], integer [], number [] ] ]
             ]
 
 

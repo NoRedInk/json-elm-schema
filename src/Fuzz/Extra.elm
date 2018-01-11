@@ -56,7 +56,7 @@ variableList min max item =
 -}
 sequence : List (Fuzzer a) -> Fuzzer (List a)
 sequence fuzzers =
-    List.foldl
+    List.foldr
         (\fuzzer listFuzzer ->
             Fuzz.constant (::)
                 |> Fuzz.andMap fuzzer
