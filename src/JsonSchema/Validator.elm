@@ -1,11 +1,11 @@
-module JsonSchema.Validator exposing (Error, ErrorMessage(..), validate)
+module JsonSchema.Validator exposing (Error, ErrorMessage(..), ValidatedValue(..), getValidatedValue, validate)
 
 {-| Validating a JSON Schema.
 
 It does not yet validate the `format` keyword.
 
-@docs validate
-@docs Error, ErrorMessage
+@docs validate, getValidatedValue
+@docs Error, ErrorMessage, ValidatedValue
 
 -}
 
@@ -49,105 +49,110 @@ It does not yet validate the `format` keyword.
 
 -}
 validate : Schema -> Value -> List Error
-validate schema v =
-    toErrors <|
-        case schema of
-            Object objectSchema ->
-                let
-                    thing : Result String (Dict String Value)
-                    thing =
-                        decodeValue (dict value) v
-                in
-                thing
-                    |> Result.map (validateObject objectSchema)
-                    |> getDecodeError
+validate schema value =
+    toErrors <| getValidatedValue schema value
 
-            Array arraySchema ->
-                decodeValue (array value) v
-                    |> Result.map (validateArray arraySchema)
-                    |> getDecodeError
 
-            String stringSchema ->
-                decodeValue string v
-                    |> Result.map (validateString stringSchema)
-                    |> getDecodeError
+{-| -}
+getValidatedValue : Schema -> Value -> ValidatedValue
+getValidatedValue schema v =
+    case schema of
+        Object objectSchema ->
+            let
+                thing : Result String (Dict String Value)
+                thing =
+                    decodeValue (dict value) v
+            in
+            thing
+                |> Result.map (validateObject objectSchema)
+                |> getDecodeError
 
-            Integer integerSchema ->
-                decodeValue int v
-                    |> Result.map (validateInteger integerSchema)
-                    |> getDecodeError
+        Array arraySchema ->
+            decodeValue (array value) v
+                |> Result.map (validateArray arraySchema)
+                |> getDecodeError
 
-            Number numberSchema ->
-                decodeValue float v
-                    |> Result.map (validateNumber numberSchema)
-                    |> getDecodeError
+        String stringSchema ->
+            decodeValue string v
+                |> Result.map (validateString stringSchema)
+                |> getDecodeError
 
-            Boolean booleanSchema ->
-                decodeValue bool v
-                    |> Result.map (always <| Valid)
-                    |> getDecodeError
+        Integer integerSchema ->
+            decodeValue int v
+                |> Result.map (validateInteger integerSchema)
+                |> getDecodeError
 
-            Null nullSchema ->
-                decodeValue (null []) v
-                    |> Result.map Invalid
-                    |> getDecodeError
+        Number numberSchema ->
+            decodeValue float v
+                |> Result.map (validateNumber numberSchema)
+                |> getDecodeError
 
-            OneOf oneOfSchema ->
-                oneOfSchema.subSchemas
-                    |> List.map (flip validate v)
-                    |> List.filter (not << List.isEmpty)
-                    |> List.length
-                    |> (\i ->
-                            case i of
-                                0 ->
-                                    [ ( [], TooManyMatches ) ]
+        Boolean booleanSchema ->
+            decodeValue bool v
+                |> Result.map (always <| Valid)
+                |> getDecodeError
 
-                                1 ->
-                                    []
+        Null nullSchema ->
+            decodeValue (null []) v
+                |> Result.map Invalid
+                |> getDecodeError
 
-                                _ ->
-                                    [ ( [], TooFewMatches ) ]
-                       )
-                    |> Invalid
+        OneOf oneOfSchema ->
+            oneOfSchema.subSchemas
+                |> List.map (flip validate v)
+                |> List.filter (not << List.isEmpty)
+                |> List.length
+                |> (\i ->
+                        case i of
+                            0 ->
+                                [ ( [], TooManyMatches ) ]
 
-            AnyOf anyOfSchema ->
-                anyOfSchema.subSchemas
-                    |> List.map (flip validate v)
-                    |> List.filter List.isEmpty
-                    |> List.length
-                    |> (\i ->
-                            case i of
-                                0 ->
-                                    [ ( [], TooFewMatches ) ]
+                            1 ->
+                                []
 
-                                _ ->
-                                    []
-                       )
-                    |> Invalid
+                            _ ->
+                                [ ( [], TooFewMatches ) ]
+                   )
+                |> Invalid
 
-            AllOf allOfSchema ->
-                allOfSchema.subSchemas
-                    |> List.map (flip validate v)
-                    |> List.filter (not << List.isEmpty)
-                    |> List.length
-                    |> (\i ->
-                            case i of
-                                0 ->
-                                    []
+        AnyOf anyOfSchema ->
+            anyOfSchema.subSchemas
+                |> List.map (flip validate v)
+                |> List.filter List.isEmpty
+                |> List.length
+                |> (\i ->
+                        case i of
+                            0 ->
+                                [ ( [], TooFewMatches ) ]
 
-                                _ ->
-                                    [ ( [], TooFewMatches ) ]
-                       )
-                    |> Invalid
+                            _ ->
+                                []
+                   )
+                |> Invalid
 
-            Ref _ ->
-                Valid
+        AllOf allOfSchema ->
+            allOfSchema.subSchemas
+                |> List.map (flip validate v)
+                |> List.filter (not << List.isEmpty)
+                |> List.length
+                |> (\i ->
+                        case i of
+                            0 ->
+                                []
 
-            Lazy f ->
-                LazyValue <| validate (f ()) v
+                            _ ->
+                                [ ( [], TooFewMatches ) ]
+                   )
+                |> Invalid
 
-            Fallback _ ->
-                Valid
+        Ref _ ->
+            Valid
+
+        Lazy f ->
+            LazyValue <| validate (f ()) v
+
+        Fallback _ ->
+            Valid
 
 
 validateObject : ObjectSchema -> Dict String Value -> ValidatedValue
@@ -212,6 +217,7 @@ validateMaxItems int values =
                 Invalid [ ( [], HasMoreItemsThan maxItems ) ]
 
 
+{-| -}
 validateString : StringSchema -> String -> ValidatedValue
 validateString schema string =
     combineValidations (StringValue string)
@@ -355,6 +361,7 @@ appendName name ( pointer, error ) =
     ( name :: pointer, error )
 
 
+{-| -}
 type ValidatedValue
     = Invalid (List Error)
     | StringValue String
