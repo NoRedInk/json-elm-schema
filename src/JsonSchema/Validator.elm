@@ -1,11 +1,11 @@
-module JsonSchema.Validator exposing (Error, ErrorMessage(..), validate)
+module JsonSchema.Validator exposing (Error, ErrorMessage(..), ValidatedValue(..), getValidatedValue, validate)
 
 {-| Validating a JSON Schema.
 
 It does not yet validate the `format` keyword.
 
-@docs validate
-@docs Error, ErrorMessage
+@docs validate, getValidatedValue
+@docs Error, ErrorMessage, ValidatedValue
 
 -}
 
@@ -41,174 +41,6 @@ type ErrorMessage
     | DecodeError String
 
 
-validateObject : ObjectSchema -> Dict String Value -> List Error
-validateObject schema values =
-    List.concatMap (validateProperty values) schema.properties
-
-
-validateArray : ArraySchema -> Array.Array Value -> List Error
-validateArray schema values =
-    validateItems schema.items values
-        ++ validateMinItems schema.minItems values
-        ++ validateMaxItems schema.maxItems values
-
-
-validateItems : Maybe Schema -> Array.Array Value -> List Error
-validateItems items values =
-    case items of
-        Nothing ->
-            []
-
-        Just itemSchema ->
-            List.concat (List.indexedMap (\i v -> List.map (appendName (toString i)) (validate itemSchema v)) (Array.toList values))
-
-
-validateMinItems : Maybe Int -> Array.Array Value -> List Error
-validateMinItems int values =
-    case int of
-        Nothing ->
-            []
-
-        Just minItems ->
-            if Array.length values >= minItems then
-                []
-            else
-                [ ( [], HasFewerItemsThan minItems ) ]
-
-
-validateMaxItems : Maybe Int -> Array.Array Value -> List Error
-validateMaxItems int values =
-    case int of
-        Nothing ->
-            []
-
-        Just maxItems ->
-            if Array.length values <= maxItems then
-                []
-            else
-                [ ( [], HasMoreItemsThan maxItems ) ]
-
-
-validateString : StringSchema -> String -> List Error
-validateString schema string =
-    validateMinLength schema.minLength string
-        ++ validateMaxLength schema.maxLength string
-        ++ validatePattern schema.pattern string
-        ++ validateEnum schema.enum string
-
-
-validateMinLength : Maybe Int -> String -> List Error
-validateMinLength minLength string =
-    case minLength of
-        Nothing ->
-            []
-
-        Just minLength ->
-            if String.length string >= minLength then
-                []
-            else
-                [ ( [], IsShorterThan minLength ) ]
-
-
-validateMaxLength : Maybe Int -> String -> List Error
-validateMaxLength maxLength string =
-    case maxLength of
-        Nothing ->
-            []
-
-        Just maxLength ->
-            if String.length string <= maxLength then
-                []
-            else
-                [ ( [], IsLongerThan maxLength ) ]
-
-
-validatePattern : Maybe String -> String -> List Error
-validatePattern pattern string =
-    case pattern of
-        Nothing ->
-            []
-
-        Just pattern ->
-            if Regex.contains (Regex.regex pattern) string then
-                []
-            else
-                [ ( [], DoesNotMatchPattern pattern ) ]
-
-
-validateEnum : Maybe (List a) -> a -> List Error
-validateEnum enum a =
-    case enum of
-        Nothing ->
-            []
-
-        Just enum ->
-            if List.member a enum then
-                []
-            else
-                [ ( [], NotInEnumeration ) ]
-
-
-validateProperty : Dict String Value -> ObjectProperty -> List Error
-validateProperty values property =
-    case property of
-        Required name schema ->
-            case Dict.get name values of
-                Nothing ->
-                    [ ( [], RequiredPropertyMissing name ) ]
-
-                Just value ->
-                    List.map (appendName name) (validate schema value)
-
-        Optional name schema ->
-            case Dict.get name values of
-                Nothing ->
-                    []
-
-                Just value ->
-                    List.map (appendName name) (validate schema value)
-
-
-validateInteger : IntegerSchema -> Int -> List Error
-validateInteger schema integer =
-    validateEnum schema.enum integer
-        ++ validateMinimum (Maybe.map toFloat schema.minimum) (toFloat integer)
-        ++ validateMaximum (Maybe.map toFloat schema.maximum) (toFloat integer)
-
-
-validateNumber : NumberSchema -> Float -> List Error
-validateNumber schema number =
-    validateEnum schema.enum number
-        ++ validateMinimum schema.minimum number
-        ++ validateMaximum schema.maximum number
-
-
-validateMinimum : Maybe Float -> Float -> List Error
-validateMinimum minimum number =
-    case minimum of
-        Nothing ->
-            []
-
-        Just minimum ->
-            if number >= minimum then
-                []
-            else
-                [ ( [], IsLessThan minimum ) ]
-
-
-validateMaximum : Maybe Float -> Float -> List Error
-validateMaximum maximum number =
-    case maximum of
-        Nothing ->
-            []
-
-        Just maximum ->
-            if number <= maximum then
-                []
-            else
-                [ ( [], IsMoreThan maximum ) ]
-
-
 {-| Validate a JSON Value against a schema.
 
 If validation fails, a list of errors is returned, otherwise the list is empty.
@@ -217,10 +49,21 @@ It does not yet validate the `format` keyword.
 
 -}
 validate : Schema -> Value -> List Error
-validate schema v =
+validate schema value =
+    toErrors <| getValidatedValue schema value
+
+
+{-| -}
+getValidatedValue : Schema -> Value -> ValidatedValue
+getValidatedValue schema v =
     case schema of
         Object objectSchema ->
-            decodeValue (dict value) v
+            let
+                thing : Result String (Dict String Value)
+                thing =
+                    decodeValue (dict value) v
+            in
+            thing
                 |> Result.map (validateObject objectSchema)
                 |> getDecodeError
 
@@ -246,11 +89,12 @@ validate schema v =
 
         Boolean booleanSchema ->
             decodeValue bool v
-                |> Result.map (always [])
+                |> Result.map (always <| Valid)
                 |> getDecodeError
 
         Null nullSchema ->
             decodeValue (null []) v
+                |> Result.map Invalid
                 |> getDecodeError
 
         OneOf oneOfSchema ->
@@ -269,6 +113,7 @@ validate schema v =
                             _ ->
                                 [ ( [], TooFewMatches ) ]
                    )
+                |> Invalid
 
         AnyOf anyOfSchema ->
             anyOfSchema.subSchemas
@@ -283,6 +128,7 @@ validate schema v =
                             _ ->
                                 []
                    )
+                |> Invalid
 
         AllOf allOfSchema ->
             allOfSchema.subSchemas
@@ -297,27 +143,260 @@ validate schema v =
                             _ ->
                                 [ ( [], TooFewMatches ) ]
                    )
+                |> Invalid
 
         Ref _ ->
-            []
+            Valid
 
         Lazy f ->
-            validate (f ()) v
+            LazyValue <| validate (f ()) v
 
         Fallback _ ->
-            []
+            Valid
 
 
-getDecodeError : Result String (List Error) -> List Error
+validateObject : ObjectSchema -> Dict String Value -> ValidatedValue
+validateObject schema values =
+    schema.properties
+        |> List.map (validateProperty values)
+        |> combineValidations (ObjectValue values)
+
+
+validateArray : ArraySchema -> Array.Array Value -> ValidatedValue
+validateArray schema values =
+    combineValidations (ArrayValue values)
+        [ validateItems schema.items values
+        , validateMinItems schema.minItems values
+        , validateMaxItems schema.maxItems values
+        ]
+
+
+validateItems : Maybe Schema -> Array.Array Value -> ValidatedValue
+validateItems items values =
+    case items of
+        Nothing ->
+            ArrayValue values
+
+        Just itemSchema ->
+            Array.toList values
+                |> List.indexedMap (\i v -> List.map (appendName (toString i)) (validate itemSchema v))
+                |> List.concat
+                |> (\a ->
+                        case a of
+                            [] ->
+                                ArrayValue values
+
+                            errorList ->
+                                Invalid errorList
+                   )
+
+
+validateMinItems : Maybe Int -> Array.Array Value -> ValidatedValue
+validateMinItems int values =
+    case int of
+        Nothing ->
+            ArrayValue values
+
+        Just minItems ->
+            if Array.length values >= minItems then
+                ArrayValue values
+            else
+                Invalid [ ( [], HasFewerItemsThan minItems ) ]
+
+
+validateMaxItems : Maybe Int -> Array.Array Value -> ValidatedValue
+validateMaxItems int values =
+    case int of
+        Nothing ->
+            ArrayValue values
+
+        Just maxItems ->
+            if Array.length values <= maxItems then
+                ArrayValue values
+            else
+                Invalid [ ( [], HasMoreItemsThan maxItems ) ]
+
+
+{-| -}
+validateString : StringSchema -> String -> ValidatedValue
+validateString schema string =
+    combineValidations (StringValue string)
+        [ validateMinLength schema.minLength string
+        , validateMaxLength schema.maxLength string
+        , validatePattern schema.pattern string
+        , validateEnum schema.enum string
+        ]
+
+
+validateMinLength : Maybe Int -> String -> ValidatedValue
+validateMinLength minLength string =
+    case minLength of
+        Nothing ->
+            StringValue string
+
+        Just minLength ->
+            if String.length string >= minLength then
+                StringValue string
+            else
+                Invalid [ ( [], IsShorterThan minLength ) ]
+
+
+validateMaxLength : Maybe Int -> String -> ValidatedValue
+validateMaxLength maxLength string =
+    case maxLength of
+        Nothing ->
+            StringValue string
+
+        Just maxLength ->
+            if String.length string <= maxLength then
+                StringValue string
+            else
+                Invalid [ ( [], IsLongerThan maxLength ) ]
+
+
+validatePattern : Maybe String -> String -> ValidatedValue
+validatePattern pattern string =
+    case pattern of
+        Nothing ->
+            StringValue string
+
+        Just pattern ->
+            if Regex.contains (Regex.regex pattern) string then
+                StringValue string
+            else
+                Invalid [ ( [], DoesNotMatchPattern pattern ) ]
+
+
+validateEnum : Maybe (List a) -> a -> ValidatedValue
+validateEnum enum a =
+    case enum of
+        Nothing ->
+            Valid
+
+        Just enum ->
+            if List.member a enum then
+                Valid
+            else
+                Invalid [ ( [], NotInEnumeration ) ]
+
+
+validateProperty : Dict String Value -> ObjectProperty -> ValidatedValue
+validateProperty values property =
+    case property of
+        Required name schema ->
+            case Dict.get name values of
+                Nothing ->
+                    Invalid [ ( [], RequiredPropertyMissing name ) ]
+
+                Just value ->
+                    List.map (appendName name) (validate schema value)
+                        |> errorsOrValid (ObjectValue values)
+
+        Optional name schema ->
+            case Dict.get name values of
+                Nothing ->
+                    ObjectValue values
+
+                Just value ->
+                    List.map (appendName name) (validate schema value)
+                        |> errorsOrValid (ObjectValue values)
+
+
+validateInteger : IntegerSchema -> Int -> ValidatedValue
+validateInteger schema integer =
+    combineValidations (IntegerValue integer)
+        [ validateEnum schema.enum integer
+        , validateMinimum (Maybe.map toFloat schema.minimum) (toFloat integer)
+        , validateMaximum (Maybe.map toFloat schema.maximum) (toFloat integer)
+        ]
+
+
+validateNumber : NumberSchema -> Float -> ValidatedValue
+validateNumber schema number =
+    combineValidations (FloatValue number)
+        [ validateEnum schema.enum number
+        , validateMinimum schema.minimum number
+        , validateMaximum schema.maximum number
+        ]
+
+
+validateMinimum : Maybe Float -> Float -> ValidatedValue
+validateMinimum minimum number =
+    case minimum of
+        Nothing ->
+            FloatValue number
+
+        Just minimum ->
+            if number >= minimum then
+                FloatValue number
+            else
+                Invalid [ ( [], IsLessThan minimum ) ]
+
+
+validateMaximum : Maybe Float -> Float -> ValidatedValue
+validateMaximum maximum number =
+    case maximum of
+        Nothing ->
+            FloatValue number
+
+        Just maximum ->
+            if number <= maximum then
+                FloatValue number
+            else
+                Invalid [ ( [], IsMoreThan maximum ) ]
+
+
+getDecodeError : Result String ValidatedValue -> ValidatedValue
 getDecodeError res =
     case res of
-        Ok e ->
-            e
+        Ok validatedValue ->
+            validatedValue
 
         Err e ->
-            [ ( [], DecodeError e ) ]
+            Invalid [ ( [], DecodeError e ) ]
 
 
 appendName : String -> Error -> Error
 appendName name ( pointer, error ) =
     ( name :: pointer, error )
+
+
+{-| -}
+type ValidatedValue
+    = Invalid (List Error)
+    | StringValue String
+    | ArrayValue (Array.Array Value)
+    | ObjectValue (Dict String Value)
+    | FloatValue Float
+    | IntegerValue Int
+    | LazyValue (List Error)
+    | Valid
+
+
+toErrors : ValidatedValue -> List Error
+toErrors validatedValue =
+    case validatedValue of
+        Invalid listErrors ->
+            listErrors
+
+        LazyValue listErrors ->
+            listErrors
+
+        _ ->
+            []
+
+
+combineValidations : ValidatedValue -> List ValidatedValue -> ValidatedValue
+combineValidations success validations =
+    List.concatMap toErrors validations
+        |> errorsOrValid success
+
+
+errorsOrValid : ValidatedValue -> List Error -> ValidatedValue
+errorsOrValid valid errorList =
+    case errorList of
+        [] ->
+            valid
+
+        errors ->
+            Invalid errors
