@@ -68,7 +68,13 @@ validate schema value =
     toErrors <| getValidatedValue [] schema value
 
 
-{-| -}
+{-| This function validates your JSON against a schema.
+
+If validation succeeds, you can then gain access to the data you need
+
+If validation fails, you can extract a list of errors
+
+-}
 getValidatedValue : Pointer -> Schema -> Value -> ValidatedValue
 getValidatedValue pointer schema v =
     case schema of
