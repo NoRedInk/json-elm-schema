@@ -1,5 +1,5 @@
 {
-    "version": "2.2.1",
+    "version": "3.0.0",
     "summary": "write json schemas in elm",
     "repository": "https://github.com/NoRedInk/json-elm-schema.git",
     "license": "BSD3",
