@@ -15,6 +15,7 @@ spec =
         List.map testSchemaDecoder
             [ Fixtures.objectSchema
             , Fixtures.arraySchema
+            , Fixtures.tupleSchema
             , Fixtures.stringSchema
             , Fixtures.stringEnumSchema
             , Fixtures.integerEnumSchema

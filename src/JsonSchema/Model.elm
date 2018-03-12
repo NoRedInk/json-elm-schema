@@ -7,6 +7,7 @@ import Json.Encode as Encode
 type Schema
     = Object ObjectSchema
     | Array ArraySchema
+    | Tuple TupleSchema
     | String StringSchema
     | Integer IntegerSchema
     | Number NumberSchema
@@ -47,6 +48,14 @@ type alias ArraySchema =
         { items : Maybe Schema
         , minItems : Maybe Int
         , maxItems : Maybe Int
+        }
+
+type alias TupleSchema =
+    BaseSchema
+        { items : Maybe (List Schema)
+        , minItems : Maybe Int
+        , maxItems : Maybe Int
+        , additionalItems: Maybe Schema
         }
 
 

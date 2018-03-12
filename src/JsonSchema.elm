@@ -1,4 +1,4 @@
-module JsonSchema exposing (Schema, allOf, anyOf, array, boolean, customFormat, dateTime, description, email, enum, examples, format, hostname, integer, ipv4, ipv6, items, lazy, maxItems, maxLength, maxProperties, maximum, minItems, minLength, minProperties, minimum, null, number, object, oneOf, optional, pattern, properties, required, string, title, uri)
+module JsonSchema exposing (Schema, additionalItems, allOf, anyOf, array, tuple, boolean, customFormat, dateTime, description, email, enum, examples, format, hostname, integer, ipv4, ipv6, items, lazy, maxItems, maxLength, maxProperties, maximum, minItems, minLength, minProperties, minimum, null, number, object, oneOf, optional, pattern, properties, required, string, title, tupleItems, uri)
 
 {-| This library allows you to write your json schema files in elm, preventing inadvertent errors.
 
@@ -10,12 +10,12 @@ module JsonSchema exposing (Schema, allOf, anyOf, array, boolean, customFormat, 
 
 # Schema types
 
-@docs object, array, string, integer, number, boolean, null, oneOf, allOf, anyOf, lazy
+@docs object, array, tuple, string, integer, number, boolean, null, oneOf, allOf, anyOf, lazy
 
 
 # Keywords
 
-@docs title, description, enum, examples, minimum, maximum, properties, items, minItems, maxItems, minLength, maxLength, pattern, format, minProperties, maxProperties
+@docs title, description, enum, examples, minimum, maximum, properties, items, minItems, maxItems, tupleItems, additionalItems, minLength, maxLength, pattern, format, minProperties, maxProperties
 
 
 # Property constructors
@@ -65,6 +65,18 @@ defaultArray =
     , items = Nothing
     , minItems = Nothing
     , maxItems = Nothing
+    , examples = []
+    }
+
+
+defaultTuple : TupleSchema
+defaultTuple =
+    { title = Nothing
+    , description = Nothing
+    , items = Nothing
+    , minItems = Nothing
+    , maxItems = Nothing
+    , additionalItems = Nothing
     , examples = []
     }
 
@@ -136,6 +148,10 @@ type alias ObjectSchemaProperty =
 
 type alias ArraySchemaProperty =
     ArraySchema -> ArraySchema
+
+
+type alias TupleSchemaProperty =
+    TupleSchema -> TupleSchema
 
 
 type alias StringSchemaProperty =
@@ -252,16 +268,30 @@ items items schema =
 
 {-| `minItems` keyword
 -}
-minItems : Int -> ArraySchemaProperty
+minItems : Int -> { a | minItems : Maybe Int } -> { a | minItems : Maybe Int }
 minItems min schema =
     { schema | minItems = Just min }
 
 
 {-| `maxItems` keyword
 -}
-maxItems : Int -> ArraySchemaProperty
+maxItems : Int -> { a | maxItems : Maybe Int } -> { a | maxItems : Maybe Int }
 maxItems max schema =
     { schema | maxItems = Just max }
+
+
+{-| `items` keyword for tuples (heretogeneous javascript arrays)
+-}
+tupleItems : List Schema -> TupleSchemaProperty
+tupleItems items schema =
+    { schema | items = Just items }
+
+
+{-| `additionalItems` keyword for tuples
+-}
+additionalItems : Schema -> TupleSchemaProperty
+additionalItems additionalItems schema =
+    { schema | additionalItems = Just additionalItems }
 
 
 {-| `minLength` keyword
@@ -356,6 +386,14 @@ array : List ArraySchemaProperty -> Schema
 array props =
     List.foldl (<|) defaultArray props
         |> Array
+
+
+{-| Create an array type schema for tuples (heretogeneous javascript arrays).
+-}
+tuple : List TupleSchemaProperty -> Schema
+tuple props =
+    List.foldl (<|) defaultTuple props
+        |> Tuple
 
 
 {-| Create a string type schema.

@@ -29,6 +29,16 @@ arraySchema =
         , maxItems 6
         ]
 
+tupleSchema : Schema
+tupleSchema =
+    tuple
+        [ title "tuple schema title"
+        , description "tuple schema description"
+        , tupleItems [ string [], number [], string [ enum [ "a", "b" ] ] ]
+        , minItems 3
+        , maxItems 6
+        ]
+
 
 stringSchema : Schema
 stringSchema =

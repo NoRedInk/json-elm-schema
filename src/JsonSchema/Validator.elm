@@ -53,6 +53,12 @@ validateArray schema values =
         ++ validateMaxItems schema.maxItems values
 
 
+validateTuple : TupleSchema -> Array.Array Value -> List Error
+validateTuple schema values =
+    validateTupleItems schema.items schema.additionalItems values
+        ++ validateMinItems schema.minItems values
+        ++ validateMaxItems schema.maxItems values
+
 validateItems : Maybe Schema -> Array.Array Value -> List Error
 validateItems items values =
     case items of
@@ -61,7 +67,6 @@ validateItems items values =
 
         Just itemSchema ->
             List.concat (List.indexedMap (\i v -> List.map (appendName (toString i)) (validate itemSchema v)) (Array.toList values))
-
 
 validateMinItems : Maybe Int -> Array.Array Value -> List Error
 validateMinItems int values =
@@ -87,6 +92,59 @@ validateMaxItems int values =
                 []
             else
                 [ ( [], HasMoreItemsThan maxItems ) ]
+
+
+validateTupleItems : Maybe (List Schema) -> Maybe Schema -> Array.Array Value -> List Error
+validateTupleItems items additionalItems values =
+    let
+        validateAll_ : Schema -> Array.Array Value -> List Error
+        validateAll_ schema vals =
+            List.concat 
+                ( List.indexedMap (\i v -> 
+                    List.map (appendName (toString i)) (validate schema v)) 
+                    (Array.toList vals)
+                )
+
+        validateMap_ : List Schema -> Array.Array Value -> List Error
+        validateMap_ schemas vals =
+            List.map3 validateWithIndex_
+                ( List.range 0 ((Array.length vals) - 1))
+                schemas
+                ( Array.toList vals )
+                   |> List.concat
+
+        validateWithIndex_ i schema v =
+            validate schema v
+                |> List.map (appendName (toString i))
+    in
+    case ( items, additionalItems ) of
+        ( Nothing, Nothing ) ->
+            []
+
+        ( Nothing, Just additionalItemSchema ) ->
+            validateAll_ additionalItemSchema values
+
+        ( Just itemSchemas, Nothing ) ->
+            {-- Note: the spec doesn't specify what should happen if you
+             have more schemas than values. If you have less schemas, it
+             suggests the extra values won't be validated.
+             
+             http://json-schema.org/latest/json-schema-validation.html#rfc.section.6.4.1 
+             
+             In a strict world it should really be an error to have more
+             schemas than values, but to go along with the general 
+             permissiveness of JSON Schema, we just validate to the lowest 
+             length.  --}
+                 
+            validateMap_ itemSchemas values
+
+        ( Just itemSchemas, Just additionalItemSchema ) ->
+            let
+                ( tupleValues, remainder ) = 
+                    arraySplitAt (List.length itemSchemas) values
+            in
+                ( validateMap_ itemSchemas tupleValues )
+                    ++ ( validateAll_ additionalItemSchema remainder )
 
 
 validateString : StringSchema -> String -> List Error
@@ -229,6 +287,11 @@ validate schema v =
                 |> Result.map (validateArray arraySchema)
                 |> getDecodeError
 
+        Tuple tupleSchema ->
+            decodeValue (array value) v
+                |> Result.map (validateTuple tupleSchema)
+                |> getDecodeError
+
         String stringSchema ->
             decodeValue string v
                 |> Result.map (validateString stringSchema)
@@ -321,3 +384,28 @@ getDecodeError res =
 appendName : String -> Error -> Error
 appendName name ( pointer, error ) =
     ( name :: pointer, error )
+
+
+    
+{-| Split an array into two arrays, the first ending at and the second starting at the given index
+    NOTE: copied from Array.Extra
+-}
+arraySplitAt : Int -> Array.Array a -> ( Array.Array a, Array.Array a )
+arraySplitAt index xs =
+    -- TODO: refactor (written this way to help avoid Array bugs)
+    let
+        len =
+            Array.length xs
+    in
+        case ( index > 0, index < len ) of
+            ( True, True ) ->
+                ( Array.slice 0 index xs, Array.slice index len xs )
+
+            ( True, False ) ->
+                ( xs, Array.empty )
+
+            ( False, True ) ->
+                ( Array.empty, xs )
+
+            ( False, False ) ->
+                ( Array.empty, Array.empty )
