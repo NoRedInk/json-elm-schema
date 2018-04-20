@@ -561,3 +561,50 @@ lazySpec =
                     |> Validator.validate lazySchema
                     |> Expect.equal [ ( [], Validator.TooFewMatches ) ]
         ]
+
+
+nestedSpec : Test
+nestedSpec =
+    let
+        objectSchema : Schema
+        objectSchema =
+            object
+                [ title "object schema title"
+                , description "object schema description"
+                , properties
+                    [ required "subList" <|
+                        array
+                            [ items <| string [ maxLength 8 ]
+                            , minItems 0
+                            , maxItems 2
+                            ]
+                    ]
+                ]
+    in
+    describe "nested schema"
+        [ test "it validates valid" <|
+            \() ->
+                Encode.object [ ( "subList", Encode.list [ Encode.string "foo" ] ) ]
+                    |> Validator.validate objectSchema
+                    |> Expect.equal []
+        , test "it gives nested errors" <|
+            \() ->
+                Encode.object
+                    [ ( "subList"
+                      , Encode.list
+                            [ Encode.string "short"
+                            , Encode.string "tooooollong"
+                            , Encode.int 1
+                            , Encode.string "thanks"
+                            , Encode.int 1
+                            ]
+                      )
+                    ]
+                    |> Validator.validate objectSchema
+                    |> Expect.equal
+                        [ ( [ "subList", "1" ], Validator.IsLongerThan 8 )
+                        , ( [ "subList", "2" ], Validator.DecodeError "Expecting a String but instead got: 1" )
+                        , ( [ "subList", "4" ], Validator.DecodeError "Expecting a String but instead got: 1" )
+                        , ( [ "subList" ], Validator.HasMoreItemsThan 2 )
+                        ]
+        ]
