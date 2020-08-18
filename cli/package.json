@@ -18,7 +18,7 @@
   "homepage": "https://github.com/NoRedInk/json-elm-schema#readme",
   "dependencies": {
     "meow": "3.7.0",
-    "node-elm-compiler": "4.3.0",
+    "node-elm-compiler": "5.0.5",
     "temp": "0.8.3"
   }
 }
