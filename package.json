@@ -17,7 +17,7 @@
   },
   "homepage": "https://github.com/NoRedInk/json-elm-schema#readme",
   "devDependencies": {
-    "ajv": "^4.11.3",
+    "ajv": "^6.12.3",
     "elm-test": "^0.18.3"
   }
 }
